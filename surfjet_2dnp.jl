@@ -21,22 +21,24 @@ function parse_command_line_arguments()
 
         "--arch"
             help = "CPU or GPU"
-            default = :CPU
+            default = "CPU"
+            arg_type = String
+
+        "--jet"
+            help = "Name of jet in jetinfo.jl"
+            default = :SIjet2
             arg_type = Symbol
     end
     return parse_args(settings)
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
-if args["arch"] == :CPU
-    arch = CPU()
-elseif args["arch"] == :GPU
-    arch = GPU()
-else
-    error("--arch keyword should be CPU or GPU")
-end
+arch = eval(Meta.parse(args["arch"]*"()"))
+jet = args["jet"]
 
-@printf("Starting Oc with a dividing factor of %d and a %s architecture\n", 
+
+@printf("Starting Oc with jet %s, a dividing factor of %d and a %s architecture\n", 
+        args["jet"],
         factor,
         arch,)
 #-----
@@ -48,10 +50,10 @@ LES = false
 as_background=true
 include("jetinfo.jl")
 
-simulation_nml = SurfaceJetSimulations().SIjet4
+simulation_nml = getproperty(SurfaceJetSimulations(), jet)
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
 
-simname = @sprintf("instFNN_%s", name)
+simname = @sprintf("FNN_%s", name)
 #-----
 
 
