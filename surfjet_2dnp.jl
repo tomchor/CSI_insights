@@ -321,6 +321,10 @@ wb_res = @at (Center, Center, Center) w*b
 wb_sgs = @at (Center, Center, Center) νz * dbdz
 
 include("diagnostics.jl")
+using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
+using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
+    anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
+    vertical_pressure_distribution_ccc! 
 
 tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
                           field_dependencies=(u, v, w))
@@ -334,16 +338,20 @@ else
 end
 
 Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         field_dependencies=(u_tot, v, b_tot, 0, 0, 0))
+                         field_dependencies=(u_tot, v, b_tot), 
+                         parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
 
 Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         field_dependencies=(u_tot, v, 0, 0, f_0))
+                         field_dependencies=(u_tot, v), 
+                         parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
 
 PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         field_dependencies=(u_tot, v, w, b_tot, f_0))
+                         field_dependencies=(u_tot, v, w, b_tot), 
+                         parameters=f_0)
 
 dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
-                            field_dependencies=(w, p), parameters=1027)
+                            field_dependencies=(w, p), 
+                            parameters=1027)
 
 SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
                            field_dependencies=(u, v, w, U))
@@ -417,7 +425,7 @@ outputs_avg = map(x_average, outputs_snap)
 simulation.output_writers[:avg_writer] =
     NetCDFOutputWriter(model, outputs_avg,
                        filepath = @sprintf("avg.%s.nc", simname),
-                       schedule = AveragedTimeInterval(5minutes; window=4.9minutes, stride=1),
+                       schedule = AveragedTimeInterval(10minutes; window=9.9minutes, stride=1),
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float64},
