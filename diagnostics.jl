@@ -166,9 +166,12 @@ end
 end
 
 
+using Oceananigans.Fields: AveragedField
+using Statistics
 function custom_average(model)
     U = AveragedField(model.velocities.u, dims=1)
     compute!(U)    
-    U_slice_averaged = mean(U.data[1, 20:50, 1:grid.Nz], dims=2)
+    U_slice_averaged = mean(U.data[1, 8:12, 1:grid.Nz], dims=2)
     return U_slice_averaged
 end
+
