@@ -128,7 +128,7 @@ end
 
 ubc = UVelocityBoundaryConditions(grid, 
                                   top = U_top_bc,
-                                  bottom = BoundaryCondition(Flux, 0),
+                                  bottom = U_bot_bc,
                                   )
 vbc = VVelocityBoundaryConditions(grid, 
                                   top = BoundaryCondition(Flux, 0),
