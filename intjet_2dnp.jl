@@ -1,10 +1,8 @@
 using ArgParse
 using Printf
-#using Pkg
-#Pkg.add(path="/glade/u/home/tomasc/repos/Oceananigans.jl/", rev="tc/kernelcomputedfield")
 using Oceananigans; oc = Oceananigans
 using Oceananigans.Utils
-using Oceananigans.Advection: WENO5, UpwindBiasedThirdOrder
+using Oceananigans.Advection: UpwindBiasedThirdOrder
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
 
@@ -23,22 +21,24 @@ function parse_command_line_arguments()
 
         "--arch"
             help = "CPU or GPU"
-            default = :CPU
+            default = "CPU"
+            arg_type = String
+
+        "--jet"
+            help = "Name of jet in jetinfo.jl"
+            default = :CIjet01
             arg_type = Symbol
     end
     return parse_args(settings)
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
-if args["arch"] == :CPU
-    arch = CPU()
-elseif args["arch"] == :GPU
-    arch = GPU()
-else
-    error("--arch keyword should be CPU or GPU")
-end
+arch = eval(Meta.parse(args["arch"]*"()"))
+jet = args["jet"]
 
-@printf("Starting Oc with a dividing factor of %d and a %s architecture\n", 
+
+@printf("Starting Oc with jet %s, a dividing factor of %d and a %s architecture\n", 
+        args["jet"],
         factor,
         arch,)
 #-----
@@ -47,12 +47,13 @@ end
 # Get simulation parameters
 #++++
 LES = false
+as_background=false
 include("jetinfo.jl")
 
-simulation_nml = Simulation_list(f0=1e-4, Ny=4096, Nz=1024, Ly=8000, Lz=500).CIjet01
-@unpack name, f0, u₀, N2_inf, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
+simulation_nml = getproperty(InteriorJetSimulations(), jet)
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
 
-simname = @sprintf("instFNN_%s", name)
+simname = @sprintf("FNN_%s", name)
 #-----
 
 
@@ -63,125 +64,161 @@ T_inertial = 2*π/f0
 
 global_attributes = merge(simulation_nml,
                           (LES=Int(LES),
-                          u0=u₀, y0=y₀, z0=z₀,
+                          u_0=u₀, y_0=y₀, z_0=z₀,
                           b0 = b₀, T_inertial = T_inertial,),
                          )
 println("\n", global_attributes, "\n")
 #-----
 
-
 # Set GRID
-#++++
-Ny = Ny÷factor; Nz = Nz÷factor
+#++++  GRID
 Nx = 1
 Lx = 6 * (Ly / Ny) * Nx
 topology = (Periodic, Bounded, Bounded)
-grid = RegularCartesianGrid(size=(Nx, Ny, Nz),
+grid = RegularCartesianGrid(size=(Nx, Ny÷factor, Nz÷factor),
                             x=(0, Lx),
                             y=(0, Ly),
-                            z=(-Lz/2, +Lz/2), 
+                            z=(-Lz, 0), 
                             topology=topology)
 println("\n", grid, "\n")
 #-----
 
+
+# Set up Geostrophic flow
+#++++++
+heaviside(X) = ifelse(X < 0, zero(X), one(X))
+const n2_inf = N2_inf
+const n2_pyc = N2_pyc
+const Hz = grid.Lz
+const Hy = grid.Ly
+const sig_z = σz
+const sig_y = σy
+const u_0 = u₀
+const y_0 = y₀
+const z_0 = z₀
+const z_c = -40
+const z_m = z_c - n2_pyc/n2_inf*(z_c+Hz)
+const f_0 = f0
+
+gaussian(ψ) = exp(-ψ^2)
+intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
+umask(Y, Z) = gaussian(Y) * gaussian(Z)
+bmask(Y, Z) = (sig_y * intgaussian(Y)) * (-2Z * gaussian(Z) / sig_z)
+
+u_g(x, y, z, t) = u₀ * umask((y-y_0)/sig_y, (z-z_0)/sig_z)
+b_g(x, y, z, t) = -b₀ * bmask((y-y_0)/sig_y, (z-z_0)/sig_z) + n2_inf * (z+Hz/2)
+dudz_g(x, y, z, t) = + u_0 * gaussian((y-y_0)/sig_y) * (-2(z-z_0)/sig_z^2) * gaussian((z-z_0)/sig_z)
+#-----
+
 # Setting BCs
 #++++
+if as_background
+    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
+    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
+    U_top_bc = GradientBoundaryCondition(surface_grad)
+    U_bot_bc = GradientBoundaryCondition(bottom_grad)
+    B_bc = GradientBoundaryCondition(0)
+else
+    U_top_bc = FluxBoundaryCondition(0)
+    U_bot_bc = FluxBoundaryCondition(0)
+    B_bc = GradientBoundaryCondition(N2_inf)
+end
+
 ubc = UVelocityBoundaryConditions(grid, 
-                                  top = BoundaryCondition(Flux, 0),
-                                  bottom = BoundaryCondition(Flux, 0),
-                                 )
+                                  top = U_top_bc,
+                                  bottom = U_bot_bc,
+                                  )
 vbc = VVelocityBoundaryConditions(grid, 
                                   top = BoundaryCondition(Flux, 0),
                                   bottom = BoundaryCondition(Flux, 0),
-                                 )
+                                  )
 wbc = WVelocityBoundaryConditions(grid, 
-                                 )
+                                  )
 bbc = TracerBoundaryConditions(grid, 
-                               bottom = BoundaryCondition(Gradient, N2_inf),
-                               top = BoundaryCondition(Gradient, N2_inf),
+                               bottom = B_bc,
+                               top = B_bc,
                                )
 #-----
 
 
 # Set-up sponge layer
 #++++
-heaviside(X) = ifelse(X < 0, zero(X), one(X))
 mask2nd(X) = heaviside(X) * X^2
 mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
-const Hz = grid.Lz
 const Hy = grid.Ly
 const frac = 8
 
 function bottom_mask(x, y, z)
-    z₁ = -Hz/2; z₀ = z₁ + Hz/frac
-    return mask3rd((z - z₀)/(z₁ - z₀))
+    z₁ = -Hz; z₀ = z₁ + Hz/frac
+    return mask2nd((z - z₀)/(z₁ - z₀))
 end
 function top_mask(x, y, z)
-    z₁ = +Hz/2; z₀ = z₁ - Hz/frac
-    return mask3rd((z - z₀)/(z₁ - z₀))
+    z₁ = +Hz; z₀ = z₁ - Hz/frac
+    return mask2nd((z - z₀)/(z₁ - z₀))
 end
 function north_mask(x, y, z)
     y₁ = Hy; y₀ = y₁ - Hy/frac
-    return mask3rd((y - y₀)/(y₁ - y₀))
+    return mask2nd((y - y₀)/(y₁ - y₀))
 end
 function south_mask(x, y, z)
     y₁ = 0; y₀ = y₁ + Hy/frac
-    return mask3rd((y - y₀)/(y₁ - y₀))
+    return mask2nd((y - y₀)/(y₁ - y₀))
 end
 
-full_mask(x, y, z) = bottom_mask(x, y, z) + top_mask(x, y, z) #+ north_mask(x, y, z) + south_mask(x, y, z)
-full_sponge = Relaxation(rate=1/30minute, mask=full_mask, target=0)
+full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
+full_sponge = Relaxation(rate=1/10minute, mask=full_mask, target=0)
 #-----
 
 
 
-# Set up ICs
+# Set up ICs and/or Background Fields
 #++++
-using SpecialFunctions: erfc
-const n2 = N2_inf
+kick = 1e-6
+if as_background
+    println("\nSetting geostrophic jet as BACKGROUND\n")
+    u_ic(x, y, z) = + kick*randn()
+    v_ic(x, y, z) = + kick*randn()
+    b_ic(x, y, z) = + 1e-8*randn()
 
-const Hz = grid.Lz
-const Hy = grid.Ly
-kick = 1e-4
+    bg_fields = (u=u_g, b=b_g,)
+else
+    println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
+    u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
+    v_ic(x, y, z) = + kick*randn()
+    b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
 
-gaussian(ψ) = exp(-ψ^2)
-intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
-umask(Y, Z) = gaussian(Y) * gaussian(Z)
-bmask(Y, Z) = (σy * intgaussian(Y)) * (-2Z * gaussian(Z) / σz)
-
-u_ic(x, y, z) = u₀ * umask((y-y₀)/σy, (z-z₀)/σz) + kick*randn()
-v_ic(x, y, z) = + kick*randn()
-b_ic(x, y, z) = -b₀ * bmask((y-y₀)/σy, (z-z₀)/σz) + n2 * (z+Hz/2) + 1e-8*randn()
+    bg_fields = NamedTuple()
+end
 #-----
 
 
 # Define our model!
 #++++
-import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, SmagorinskyLilly, IsotropicDiffusivity
 if LES
-    closure = SmagorinskyLilly()
+    import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
+    closure = SmagorinskyLilly(C=0.23)
 else
+    import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
 #    closure = IsotropicDiffusivity(ν=1e-5, κ=1e-5)
-    closure = AnisotropicDiffusivity(νh=5e-2, κh=5e-2, νz=5e-4, κz=5e-4)
+    closure = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=1e-4, κz=1e-4)
 end
 model = IncompressibleModel(architecture = arch,
                             grid = grid,
                             advection = UpwindBiasedThirdOrder(),
-                            #advection = WENO5(),
                             timestepper = :RungeKutta3,
                             closure = closure,
                             coriolis = FPlane(f=f0),
                             tracers = (:b,),
                             buoyancy = BuoyancyTracer(),
                             boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                            forcing = (v=full_sponge, w=full_sponge,),
+                            forcing = (u=full_sponge, v=full_sponge, w=full_sponge, b=full_sponge),
+                            background_fields = bg_fields,
                             )
 println("\n", model, "\n")
 #-----
 
 
-
-# Adding the IC
+# Adding the ICs
 #++++
 set!(model, u=u_ic, v=v_ic, b=b_ic)
 
@@ -191,9 +228,10 @@ model.velocities.v.data.parent .-= v̄
 
 if false
     using Plots; pyplot()
-    x = oc.Grids.xnodes(Center, grid)
-    y = oc.Grids.ynodes(Center, grid)
-    z = oc.Grids.znodes(Center, grid)
+    xC = oc.Grids.xnodes(Center, grid)
+    yC = oc.Grids.ynodes(Center, grid)
+    zC = oc.Grids.znodes(Center, grid)
+    zF = oc.Grids.znodes(Face, grid)
 
     contourf(y, z, interior(model.tracers.b)[1,:,:]', levels=30)
 end
@@ -203,10 +241,10 @@ end
 # Define time-stepping and printing
 #++++
 u_scale = abs(u₀)
-Δt = 0.1 * max(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.8,
-                        diffusive_cfl=0.8,
-                        Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.05seconds)
+Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
+wizard = TimeStepWizard(cfl=0.5,
+                        diffusive_cfl=0.5,
+                        Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.5seconds)
 
 advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
 difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
@@ -228,16 +266,16 @@ end
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         #stop_time=5*T_inertial,
-                        stop_time=15*T_inertial,
+                        stop_time=10*T_inertial,
                         iteration_interval=5, progress=progress,
                         stop_iteration=Inf,)
 #-----
 
-
-
-
 # START DIAGNOSTICS
 #++++
+
+# Preamble
+#+++++ Preamble
 import Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Grids: Center, Face
@@ -246,10 +284,23 @@ u, v, w = model.velocities
 b = model.tracers.b
 p = sum(model.pressures)
 
+U = model.background_fields.velocities.u
+B = model.background_fields.tracers.b
+
+if as_background
+    u_tot = u + U
+    b_tot = b + B
+else
+    u_tot = u
+    b_tot = b
+end
+#----
+
+
 # Start calculation of snapshot variables
 #++++
 if LES
-    νx, νy, νz = model.diffusivities.νₑ
+    νₑ = νz = model.diffusivities.νₑ
 else
     if :ν in fieldnames(typeof(model.closure))
         νx = νy = νz = model.closure.ν
@@ -259,58 +310,87 @@ else
     end
 end
 
-dbdz = ∂z(b)
+dbdz = ∂z(b_tot)
 ω_x = ∂y(w) - ∂z(v)
-ω_y = ∂z(u) - ∂x(w)
-ω_z = ∂x(v) - ∂y(u)
+ω_y = ∂z(u_tot) - ∂x(w)
+ω_z = ∂x(v) - ∂y(u_tot)
 
 wb_res = @at (Center, Center, Center) w*b
 wb_sgs = @at (Center, Center, Center) νz * dbdz
 
 include("diagnostics.jl")
+using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
+using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
+    anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
+    vertical_pressure_distribution_ccc! 
 
-tke = KernelComputedField(Center, Center, Center, compute_turbulent_kinetic_energy!, model;
-                          field_dependencies=(u, v, w, 0, 0, 0))
+tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
+                          field_dependencies=(u, v, w))
 
-ε_ani = KernelComputedField(Center, Center, Center, compute_ani_viscous_dissipation!, model;
+if LES
+    ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
+                            field_dependencies=(νₑ, u, v, w))
+else
+    ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
                             field_dependencies=(νx, νy, νz, u, v, w))
+end
 
-Ri = KernelComputedField(Center, Center, Face, compute_richardson_number!, model;
-                         field_dependencies=(u, v, b, 0, 0, 0))
+Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
+                         field_dependencies=(u_tot, v, b_tot), 
+                         parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
 
-Ro = KernelComputedField(Face, Face, Center, compute_rossby_number!, model;
-                         field_dependencies=(u, v, 0, 0, model.coriolis.f))
+Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
+                         field_dependencies=(u_tot, v), 
+                         parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
 
-PV = KernelComputedField(Center, Center, Face, compute_pv_from_Ro_Ri!, model;
-                         field_dependencies=(Ri, Ro, dbdz, model.coriolis.f))
+PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
+                         field_dependencies=(u_tot, v, w, b_tot), 
+                         parameters=f_0)
 
-dwpdz = KernelComputedField(Center, Center, Center, compute_vertical_pressure_term!, model;
-                            field_dependencies=(w, p), parameters=1027)
+dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
+                            field_dependencies=(w, p), 
+                            parameters=1027)
 
-outputs_netcdf = (u=u, 
+SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
+                           field_dependencies=(u, v, w, U))
+
+SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
+                           field_dependencies=(u, v, w, U))
+
+outputs_snap = (u=u,
                   v=v,
                   w=w,
                   b=b,
                   p=ComputedField(p),
                   wb_res=ComputedField(wb_res),
-                  wb_sgs=ComputedField(wb_sgs),
+                  #wb_sgs=ComputedField(wb_sgs),
                   dwpdz=ComputedField(dwpdz),
                   dbdz=ComputedField(dbdz),
                   ω_x=ComputedField(ω_x),
-                  ω_z=ComputedField(ω_z),
+                  #ω_z=ComputedField(ω_z),
                   tke=tke,
-                  ε=ε_ani,
+                  ε=ε,
                   Ro=Ro,
                   Ri=Ri,
                   PV=PV,
+                  SP_y=SP_y,
+                  SP_z=SP_z,
                   )
+
+if LES
+    outputs_snap = merge(outputs_snap, (ν_e=νₑ,))
+end
+if as_background
+    outputs_snap = merge(outputs_snap, (u_tot=ComputedField(u_tot),
+                                            b_tot=ComputedField(b_tot),))
+end
 #-----
 
 
-# Video (low def) SNAPSHOTS
+# Analysis (high def) SNAPSHOTS
 #++++
 simulation.output_writers[:out_writer] =
-    NetCDFOutputWriter(model, outputs_netcdf,
+    NetCDFOutputWriter(model, outputs_snap,
                        filepath = @sprintf("out.%s.nc", simname),
                        schedule = TimeInterval(6hours),
                        mode = "c",
@@ -320,42 +400,34 @@ simulation.output_writers[:out_writer] =
                       )
 #-----
 
-# Analysis (high def) SNAPSHOTS
+
+# Video (low def) SNAPSHOTS
 #++++
 simulation.output_writers[:vid_writer] =
-    NetCDFOutputWriter(model, outputs_netcdf,
+    NetCDFOutputWriter(model, outputs_snap,
                        filepath = @sprintf("vid.%s.nc", simname),
-                       schedule = TimeInterval(60minutes),
+                       schedule = TimeInterval(90minutes),
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float32},
-                       field_slicer = FieldSlicer(i=1, j=1:Ny, k = 1+Nz÷frac : Nz-Nz÷frac),
+                       field_slicer = FieldSlicer(i=1, with_halos=false),
                       )
 #-----
 
+
 # AVG outputs
 #++++
-avg_b = AveragedField(b, dims=(1, 2))
-avg_tke = AveragedField(tke, dims=(1, 2))
-avg_ε = AveragedField(ε_ani, dims=(1, 2))
-avg_wb_res = AveragedField(wb_res, dims=(1, 2))
-avg_wb_sgs = AveragedField(wb_sgs, dims=(1, 2))
-avg_dwpdz = AveragedField(dwpdz, dims=(1, 2))
+x_average(F) = AveragedField(F, dims=(1,))
+outputs_avg = map(x_average, outputs_snap)
 
-outputs = (b=avg_b,
-           tke=avg_tke, 
-           ε=avg_ε,
-           wb_res=avg_wb_res,
-           wb_sgs=avg_wb_sgs,
-           dwpdz=avg_dwpdz,
-          )
 simulation.output_writers[:avg_writer] =
-    NetCDFOutputWriter(model, outputs,
+    NetCDFOutputWriter(model, outputs_avg,
                        filepath = @sprintf("avg.%s.nc", simname),
-                       schedule = AveragedTimeInterval(2minutes; window=1.9minutes, stride=1),
+                       schedule = AveragedTimeInterval(10minutes; window=9.9minutes, stride=1),
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float64},
+                       field_slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false),
                       )
 #-----
 #-----

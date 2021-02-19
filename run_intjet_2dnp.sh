@@ -1,14 +1,11 @@
 #!/bin/bash -l
 #SBATCH --account=UMCP0012
-#SBATCH --job-name=jet_2dnp
-#SBATCH --output=slurm.out
-#SBATCH --error=slurm.err
+#SBATCH --job-name=i2CIjet01
+#SBATCH --output=out/slurm.out
+#SBATCH --error=out/%x.err
 #SBATCH --time=8:00:00
-##SBARCH --mem=0
 #SBATCH --nodes=1
-##SBATCH --ntasks-per-node=4
 #SBATCH --gres=gpu:v100:1 # GPUs per Node
-##SBATCH --cpus-per-task=4
 #SBATCH --mail-user=tchor@umd.edu
 #SBATCH --mail-type=ALL
 
@@ -19,7 +16,6 @@ module load cuda
 
 /glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
-/glade/u/home/tomasc/repos/julia/julia jet_2dnp.jl --arch=GPU --factor=1 2>&1 | tee output.out
+/glade/u/home/tomasc/repos/julia/julia --project -J ../Ocean_cuda_v0.48.0.so \
+    intjet_2dnp.jl --jet=CIjet01 --arch=GPU --factor=1 2>&1 | tee out/ij2d_CIjet01.out
 
-#module load julia
-#julia inst_2dnp.jl --arch=GPU --factor=1 2>&1 | tee output.out

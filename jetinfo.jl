@@ -2,15 +2,16 @@ using Parameters
 
 @with_kw struct InteriorJetSimulations
     f0 = 1e-4
-    Ny = 4096
-    Nz = 512
+    Ny = 2^12
+    Nz = 2^9
     Ly = 10_000 # m
-    Lz = 800 # m
+    Lz = 500 # m
 
     JD15exp = (name = "JD15exp",
              f0 = f0,
              u₀ = 0.35e0,
-             N2 = 4.9e-5,
+             N2_inf = 4.9e-5,
+             N2_pyc = 4.9e-5,
              Ny = Ny,
              Nz = Nz,
              Ly = 5000,
@@ -18,13 +19,14 @@ using Parameters
              σy = 1600,
              σz = 80,
              y₀ = Ly/2,
-             z₀ = 0,
+             z₀ = -Lz/2,
           )
 
     CIjet01 = (name = "CIintjet01",
               f0 = f0,
               u₀ = -0.4, # m/s
               N2_inf = 4e-5, # 1/s²
+              N2_pyc = 4e-5, # 1/s²
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
@@ -32,7 +34,7 @@ using Parameters
               σy = 1600, # m
               σz = 80, # m
               y₀ = Ly/3, # m
-              z₀ = 0, # m
+              z₀ = -Lz/2, # m
               )
 
 end
