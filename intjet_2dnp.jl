@@ -47,7 +47,7 @@ jet = args["jet"]
 # Get simulation parameters
 #++++
 LES = false
-as_background=false
+as_background=true
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
@@ -105,8 +105,8 @@ intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
 umask(Y, Z) = gaussian(Y) * gaussian(Z)
 bmask(Y, Z) = (sig_y * intgaussian(Y)) * (-2Z * gaussian(Z) / sig_z)
 
-u_g(x, y, z, t) = u₀ * umask((y-y_0)/sig_y, (z-z_0)/sig_z)
-b_g(x, y, z, t) = -b₀ * bmask((y-y_0)/sig_y, (z-z_0)/sig_z) + n2_inf * (z+Hz/2)
+u_g(x, y, z, t) = u_0 * umask((y-y_0)/sig_y, (z-z_0)/sig_z)
+b_g(x, y, z, t) = -u_0*f_0 * bmask((y-y_0)/sig_y, (z-z_0)/sig_z) + n2_inf * (z+Hz/2)
 dudz_g(x, y, z, t) = + u_0 * gaussian((y-y_0)/sig_y) * (-2(z-z_0)/sig_z^2) * gaussian((z-z_0)/sig_z)
 #-----
 
