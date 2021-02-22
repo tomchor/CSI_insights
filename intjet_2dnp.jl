@@ -75,7 +75,7 @@ println("\n", global_attributes, "\n")
 Nx = 1
 Lx = 6 * (Ly / Ny) * Nx
 topology = (Periodic, Bounded, Bounded)
-grid = RegularCartesianGrid(size=(Nx, Ny÷factor, Nz÷factor),
+grid = RegularRectilinearGrid(size=(Nx, Ny÷factor, Nz÷factor),
                             x=(0, Lx),
                             y=(0, Ly),
                             z=(-Lz, 0), 

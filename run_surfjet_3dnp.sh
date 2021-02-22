@@ -16,6 +16,6 @@ module load cuda
 
 /glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
-/glade/u/home/tomasc/repos/julia/julia --project -J ../Ocean_cuda_v0.48.0.so \
+/glade/u/home/tomasc/repos/julia/julia --project -J ../Ocean_cuda_v0.50.0.so \
     surfjet_3dnp.jl --jet=SIjet4 --arch=GPU --factor=4 2>&1 | tee out/sj3d_SIjet4.out
 
