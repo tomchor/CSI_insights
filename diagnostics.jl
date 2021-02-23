@@ -43,7 +43,7 @@ using Statistics: mean
 function (wsa::WindowedSpatialAverage)(model)
     compute!(wsa.field)
     window = slice_parent(wsa.field_slicer, wsa.field)
-    return mean(window, dims=wsa.dims)
+    return dropdims(mean(window, dims=wsa.dims), dims=wsa.dims)
 end
 
 
