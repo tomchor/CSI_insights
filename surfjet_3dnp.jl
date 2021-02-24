@@ -416,7 +416,12 @@ simulation.output_writers[:vid_writer] =
 # AVG outputs
 #++++
 x_average(F) = AveragedField(F, dims=(1,))
-outputs_avg = map(x_average, outputs_snap)
+xz_average(F) = AveragedField(F, dims=(1,3))
+
+slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
+window_average(F) = WindowedSpatialAverage(F; dims=2, field_slicer=slicer)
+
+outputs_avg = map(window_average, outputs_snap)
 
 simulation.output_writers[:avg_writer] =
     NetCDFOutputWriter(model, outputs_avg,
@@ -425,7 +430,6 @@ simulation.output_writers[:avg_writer] =
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float64},
-                       field_slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false),
                       )
 #-----
 #-----
@@ -646,20 +650,18 @@ simulation.output_writers[:vid_writer] =
 
 # AVG outputs
 #++++
-outputs_avg = map(x_average, outputs_snap)
+outputs_avg = map(window_average, outputs_snap)
+
 simulation.output_writers[:avg_writer] =
     NetCDFOutputWriter(model, outputs_avg,
                        filepath = @sprintf("avg.%s.nc", simname),
-                       schedule = AveragedTimeInterval(10minutes; window=9.9minutes, stride=1),
+                       schedule = AveragedTimeInterval(2minutes; window=1.9minutes, stride=1),
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float64},
-                       field_slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false),
                       )
 #-----
 #-----
-
-
 
 # Run the simulation!
 #+++++
@@ -669,3 +671,4 @@ println("\n", simulation,
 @printf("---> Starting run!\n")
 run!(simulation)
 #-----
+

@@ -31,15 +31,18 @@ end
 #-----
 
 #----- Windowed Average
+import Oceananigans.OutputWriters: slice_parent
+using Statistics: mean
+
 struct WindowedSpatialAverage{F, S, D}
           field :: F
    field_slicer :: S
            dims :: D
 end
+
+
 WindowedSpatialAverage(field; dims, field_slicer=FieldSlicer()) = WindowedSpatialAverage(field, field_slicer, dims)
 
-using Oceananigans.OutputWriters: slice_parent
-using Statistics: mean
 function (wsa::WindowedSpatialAverage)(model)
     compute!(wsa.field)
     window = slice_parent(wsa.field_slicer, wsa.field)
@@ -47,13 +50,16 @@ function (wsa::WindowedSpatialAverage)(model)
 end
 
 
-#++++ Make detection 
+#++++ Make dims detection 
 using NCDatasets: defVar
 using Oceananigans.Fields: reduced_location
 import Oceananigans.OutputWriters: xdim, ydim, zdim, define_output_variable!
-
-function define_output_variable!(dataset, wsa::WindowedSpatialAverage, name, array_type, compression, attributes, dimensions)
+function define_output_variable!(dataset,
+                                 wtsa::Union{WindowedSpatialAverage, WindowedTimeAverage{<:WindowedSpatialAverage}},
+                                 name, array_type, compression, attributes, dimensions)
+    wsa = wtsa isa WindowedTimeAverage ? wtsa.operand : wtsa
     LX, LY, LZ = reduced_location(location(wsa.field), dims=wsa.dims)
+
     output_dims = tuple(xdim(LX)..., ydim(LY)..., zdim(LZ)...)
     defVar(dataset, name, eltype(array_type), (output_dims..., "time"),
            compression=compression, attrib=attributes)

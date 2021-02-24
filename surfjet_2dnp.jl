@@ -422,13 +422,11 @@ simulation.output_writers[:vid_writer] =
 x_average(F) = AveragedField(F, dims=(1,))
 xz_average(F) = AveragedField(F, dims=(1,3))
 
-#slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
-#window_average(F) = WindowedSpatialAverage(F; dims=2, field_slicer=slicer)
+slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
+window_average(F) = WindowedSpatialAverage(F; dims=2, field_slicer=slicer)
 
-outputs_avg = map(xz_average, outputs_snap)
-#outputs_avg = NamedTuple{(:b, :b_tot)}(outputs_avg)
+outputs_avg = map(window_average, outputs_snap)
 
-#dims = (;(name=> location(field) == Center ? ("zC",) : ("zF",) for (name, field) in pairs(outputs_avg))...)
 simulation.output_writers[:avg_writer] =
     NetCDFOutputWriter(model, outputs_avg,
                        filepath = @sprintf("avg.%s.nc", simname),
@@ -436,11 +434,9 @@ simulation.output_writers[:avg_writer] =
                        mode = "c",
                        global_attributes = global_attributes,
                        array_type = Array{Float64},
-#                       dimensions = dims,
                       )
 #-----
 #-----
-
 
 # Run the simulation!
 #+++++
