@@ -69,3 +69,41 @@ end
 #----
 
 #----
+
+
+
+#++++ PV components
+
+@kernel function ertel_potential_vorticity_barotropic_fff!(PV, grid, u, v, b, f₀)
+    i, j, k = @index(Global, NTuple)
+
+    dVdx =  ℑzᵃᵃᶠ(i, j, k, grid, ∂xᶠᵃᵃ, v) # C, F, C  → F, F, C → F, F, F
+    dUdy =  ℑzᵃᵃᶠ(i, j, k, grid, ∂yᵃᶠᵃ, u) # F, C, C  → F, F, C → F, F, F
+    dbdz = ℑxyᶠᶠᵃ(i, j, k, grid, ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F → F, F, F
+    pv_z = (f₀ + dVdx - dUdy) * dbdz
+
+    @inbounds PV[i, j, k] = pv_z
+end
+
+
+
+@kernel function ertel_potential_vorticity_baroclinic_fff!(PV, grid, u, v, w, b, f₀)
+    i, j, k = @index(Global, NTuple)
+
+    dWdy =  ℑxᶠᵃᵃ(i, j, k, grid, ∂yᵃᶠᵃ, w) # C, C, F  → C, F, F  → F, F, F
+    dVdz =  ℑxᶠᵃᵃ(i, j, k, grid, ∂zᵃᵃᶠ, v) # C, F, C  → C, F, F  → F, F, F
+    dbdx = ℑyzᵃᶠᶠ(i, j, k, grid, ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → F, F, F
+    pv_x = (dWdy - dVdz) * dbdx # F, F, F
+
+    dUdz =  ℑyᵃᶠᵃ(i, j, k, grid, ∂zᵃᵃᶠ, u) # F, C, C  → F, C, F → F, F, F
+    dWdx =  ℑyᵃᶠᵃ(i, j, k, grid, ∂xᶠᵃᵃ, w) # C, C, F  → F, C, F → F, F, F
+    dbdy = ℑxzᶠᵃᶠ(i, j, k, grid, ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C → F, F, F
+    pv_y = (dUdz - dWdx) * dbdy # F, F, F
+
+    @inbounds PV[i, j, k] = pv_x + pv_y
+end
+
+
+
+#----
+

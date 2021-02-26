@@ -316,11 +316,8 @@ end
 
 dbdz = ∂z(b_tot)
 ω_x = ∂y(w) - ∂z(v)
-ω_y = ∂z(u_tot) - ∂x(w)
-#ω_z = ∂x(v) - ∂y(u_tot)
 
 wb_res = @at (Center, Center, Center) w*b
-#wb_sgs = @at (Center, Center, Center) νz * dbdz
 
 include("diagnostics.jl")
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
@@ -339,17 +336,13 @@ else
                             field_dependencies=(νx, νy, νz, u, v, w))
 end
 
-Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         field_dependencies=(u_tot, v, b_tot), 
-                         parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
+PV_bt = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_barotropic_fff!, model;
+                            field_dependencies=(u_tot, v, b_tot), 
+                            parameters=f_0)
 
-Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         field_dependencies=(u_tot, v), 
-                         parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
-
-PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         field_dependencies=(u_tot, v, w, b_tot), 
-                         parameters=f_0)
+PV_bc = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_baroclinic_fff!, model;
+                            field_dependencies=(u_tot, v, w, b_tot), 
+                            parameters=f_0)
 
 
 vp = ComputedField(@at (Center, Face, Center) v*p)
@@ -365,7 +358,6 @@ SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, mode
 
 SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
                            field_dependencies=(u, v, w, U))
-
 #-----
 
 
