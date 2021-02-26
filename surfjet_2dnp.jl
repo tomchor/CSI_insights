@@ -21,7 +21,7 @@ function parse_command_line_arguments()
 
         "--arch"
             help = "CPU or GPU"
-            default = "CPU"
+            default = "GPU"
             arg_type = String
 
         "--jet"
@@ -60,6 +60,7 @@ simname = @sprintf("FNN_%s", name)
 # Calculate secondary parameters
 #++++
 b₀ = u₀ * f0
+ρ₀ = 1027
 T_inertial = 2*π/f0
 
 global_attributes = merge(simulation_nml,
@@ -282,9 +283,10 @@ import Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Grids: Center, Face
 
+const ρ0 = ρ₀
 u, v, w = model.velocities
 b = model.tracers.b
-p = sum(model.pressures)
+p = ComputedField(sum(model.pressures))
 
 U = model.background_fields.velocities.u
 B = model.background_fields.tracers.b
@@ -349,13 +351,14 @@ PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model
                          field_dependencies=(u_tot, v, w, b_tot), 
                          parameters=f_0)
 
-dvpdy = KernelComputedField(Center, Center, Center, pressure_distribution_y_ccc!, model;
-                            field_dependencies=(v, p), 
-                            parameters=1027)
 
-dwpdz = KernelComputedField(Center, Center, Center, pressure_distribution_z_ccc!, model;
-                            field_dependencies=(w, p), 
-                            parameters=1027)
+vp = ComputedField(@at (Center, Face, Center) v*p)
+dvpdy_ρ = ComputedField(@at (Center, Center, Center) (∂y(vp)/ρ0))
+
+
+wp = ComputedField(@at (Center, Center, Face) w*p)
+dwpdz_ρ = ComputedField(@at (Center, Center, Center) (∂z(wp)/ρ0))
+
 
 SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
                            field_dependencies=(u, v, w, U))
@@ -372,10 +375,10 @@ outputs_snap = (u=u,
                 v=v,
                 w=w,
                 b=b,
-                p=ComputedField(p),
+                p=p,
                 wb_res=ComputedField(wb_res),
-                dwpdz=dwpdz,
-                dvpdy=dvpdy,
+                dwpdz_ρ=dwpdz_ρ,
+                dvpdy_ρ=dvpdy_ρ,
                 dbdz=ComputedField(dbdz),
                 ω_x=ComputedField(ω_x),
                 tke=tke,
@@ -411,7 +414,7 @@ simulation.output_writers[:out_writer] =
 #++++
 delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
 
-outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz, :dvpdy, :p))
+outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
 
 simulation.output_writers[:vid_writer] =
     NetCDFOutputWriter(model, outputs_vid,
