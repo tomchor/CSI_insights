@@ -30,7 +30,8 @@ end
 end
 #-----
 
-#----- Windowed Average
+
+#++++ Windowed Average
 import Oceananigans.OutputWriters: slice_parent
 using Statistics: mean
 

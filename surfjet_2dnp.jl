@@ -315,16 +315,16 @@ end
 dbdz = ∂z(b_tot)
 ω_x = ∂y(w) - ∂z(v)
 ω_y = ∂z(u_tot) - ∂x(w)
-ω_z = ∂x(v) - ∂y(u_tot)
+#ω_z = ∂x(v) - ∂y(u_tot)
 
 wb_res = @at (Center, Center, Center) w*b
-wb_sgs = @at (Center, Center, Center) νz * dbdz
+#wb_sgs = @at (Center, Center, Center) νz * dbdz
 
 include("diagnostics.jl")
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
 using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
     anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
-    vertical_pressure_distribution_ccc! 
+    pressure_distribution_y_ccc!, pressure_distribution_z_ccc! 
 
 tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
                           field_dependencies=(u, v, w))
@@ -349,7 +349,11 @@ PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model
                          field_dependencies=(u_tot, v, w, b_tot), 
                          parameters=f_0)
 
-dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
+dvpdy = KernelComputedField(Center, Center, Center, pressure_distribution_y_ccc!, model;
+                            field_dependencies=(v, p), 
+                            parameters=1027)
+
+dwpdz = KernelComputedField(Center, Center, Center, pressure_distribution_z_ccc!, model;
                             field_dependencies=(w, p), 
                             parameters=1027)
 
@@ -359,38 +363,38 @@ SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, mode
 SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
                            field_dependencies=(u, v, w, U))
 
+#-----
+
+
+# Analysis (high def) SNAPSHOTS
+#++++
 outputs_snap = (u=u,
-                  v=v,
-                  w=w,
-                  b=b,
-                  p=ComputedField(p),
-                  wb_res=ComputedField(wb_res),
-                  #wb_sgs=ComputedField(wb_sgs),
-                  dwpdz=ComputedField(dwpdz),
-                  dbdz=ComputedField(dbdz),
-                  ω_x=ComputedField(ω_x),
-                  #ω_z=ComputedField(ω_z),
-                  tke=tke,
-                  ε=ε,
-                  Ro=Ro,
-                  Ri=Ri,
-                  PV=PV,
-                  SP_y=SP_y,
-                  SP_z=SP_z,
-                  )
+                v=v,
+                w=w,
+                b=b,
+                p=ComputedField(p),
+                wb_res=ComputedField(wb_res),
+                dwpdz=dwpdz,
+                dvpdy=dvpdy,
+                dbdz=ComputedField(dbdz),
+                ω_x=ComputedField(ω_x),
+                tke=tke,
+                ε=ε,
+                Ro=Ro,
+                Ri=Ri,
+                PV=PV,
+                SP_y=SP_y,
+                SP_z=SP_z,
+                )
 
 if LES
     outputs_snap = merge(outputs_snap, (ν_e=νₑ,))
 end
 if as_background
     outputs_snap = merge(outputs_snap, (u_tot=ComputedField(u_tot),
-                                            b_tot=ComputedField(b_tot),))
+                                        b_tot=ComputedField(b_tot),))
 end
-#-----
 
-
-# Analysis (high def) SNAPSHOTS
-#++++
 simulation.output_writers[:out_writer] =
     NetCDFOutputWriter(model, outputs_snap,
                        filepath = @sprintf("out.%s.nc", simname),
@@ -405,8 +409,12 @@ simulation.output_writers[:out_writer] =
 
 # Video (low def) SNAPSHOTS
 #++++
+delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
+
+outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz, :dvpdy, :p))
+
 simulation.output_writers[:vid_writer] =
-    NetCDFOutputWriter(model, outputs_snap,
+    NetCDFOutputWriter(model, outputs_vid,
                        filepath = @sprintf("vid.%s.nc", simname),
                        schedule = TimeInterval(90minutes),
                        mode = "c",

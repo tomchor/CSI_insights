@@ -476,11 +476,11 @@ u_scale = abs(u₀)
 Δt = simulation.Δt.Δt
 wizard = TimeStepWizard(cfl=0.1,
                         diffusive_cfl=0.1,
-                        Δt=Δt, max_change=1.05, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
+                        Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 
 advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
 difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-cfl(t) = t<10hours ? 0.1 : 0.2
+cfl(t) = t<10hours ? 0.1 : 0.18
 function progress(sim)
     wizard.cfl = cfl(sim.model.clock.time)
     msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
