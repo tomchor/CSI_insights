@@ -321,40 +321,40 @@ include("diagnostics.jl")
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
 using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
     anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
-    vertical_pressure_distribution_ccc! 
+    pressure_redistribution_y_ccc!, pressure_redistribution_z_ccc! 
 
 tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                          field_dependencies=(u, v, w))
+                          computed_dependencies=(u, v, w))
 
 if false
     ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νₑ, u, v, w))
+                            computed_dependencies=(νₑ, u, v, w))
 else
     ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νx, νy, νz, u, v, w))
+                            computed_dependencies=(νx, νy, νz, u, v, w))
 end
 
 Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         field_dependencies=(u_tot, v, b_tot), 
+                         computed_dependencies=(u_tot, v, b_tot), 
                          parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
 
 Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         field_dependencies=(u_tot, v), 
+                         computed_dependencies=(u_tot, v), 
                          parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
 
 PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         field_dependencies=(u_tot, v, w, b_tot), 
+                         computed_dependencies=(u_tot, v, w, b_tot), 
                          parameters=f_0)
 
 dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
-                            field_dependencies=(w, p), 
+                            computed_dependencies=(w, p), 
                             parameters=1027)
 
 SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 
 SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 
 outputs_snap = (u=u,
                 v=v,
@@ -559,37 +559,37 @@ using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!,
     vertical_pressure_distribution_ccc! 
 
 tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                          field_dependencies=(u, v, w))
+                          computed_dependencies=(u, v, w))
 
 if true
     ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νₑ, u, v, w))
+                            computed_dependencies=(νₑ, u, v, w))
 else
     ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νx, νy, νz, u, v, w))
+                            computed_dependencies=(νx, νy, νz, u, v, w))
 end
 
 Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         field_dependencies=(u_tot, v, b_tot), 
+                         computed_dependencies=(u_tot, v, b_tot), 
                          parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
 
 Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         field_dependencies=(u_tot, v), 
+                         computed_dependencies=(u_tot, v), 
                          parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
 
 PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         field_dependencies=(u_tot, v, w, b_tot), 
+                         computed_dependencies=(u_tot, v, w, b_tot), 
                          parameters=f_0)
 
 dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
-                            field_dependencies=(w, p), 
+                            computed_dependencies=(w, p), 
                             parameters=1027)
 
 SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 
 SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 
 outputs_snap = (u=u,
                   v=v,

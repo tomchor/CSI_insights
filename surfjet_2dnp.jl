@@ -21,12 +21,12 @@ function parse_command_line_arguments()
 
         "--arch"
             help = "CPU or GPU"
-            default = "GPU"
+            default = "CPU"
             arg_type = String
 
         "--jet"
             help = "Name of jet in jetinfo.jl"
-            default = :SIjet2
+            default = :CIjet1
             arg_type = Symbol
     end
     return parse_args(settings)
@@ -286,7 +286,7 @@ using Oceananigans.Grids: Center, Face
 const ρ0 = ρ₀
 u, v, w = model.velocities
 b = model.tracers.b
-p = ComputedField(sum(model.pressures))
+p = sum(model.pressures)
 
 U = model.background_fields.velocities.u
 B = model.background_fields.tracers.b
@@ -323,43 +323,43 @@ include("diagnostics.jl")
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
 using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
     anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
-    pressure_distribution_y_ccc!, pressure_distribution_z_ccc! 
+    pressure_redistribution_y_ccc!, pressure_redistribution_z_ccc! 
 
 tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                          field_dependencies=(u, v, w))
+                          computed_dependencies=(u, v, w))
 
 if LES
     ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νₑ, u, v, w))
+                            computed_dependencies=(νₑ, u, v, w))
 else
     ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                            field_dependencies=(νx, νy, νz, u, v, w))
+                            computed_dependencies=(νx, νy, νz, u, v, w))
 end
 
 PV_bt = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_barotropic_fff!, model;
-                            field_dependencies=(u_tot, v, b_tot), 
+                            computed_dependencies=(u_tot, v, b_tot), 
                             parameters=f_0)
 
 PV_bc = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_baroclinic_fff!, model;
-                            field_dependencies=(u_tot, v, w, b_tot), 
+                            computed_dependencies=(u_tot, v, w, b_tot), 
                             parameters=f_0)
 
+dvpdy_ρ = KernelComputedField(Center, Center, Center, pressure_redistribution_y_ccc!, model;
+                              computed_dependencies=(v, p),
+                              parameters=ρ0)
 
-vp = ComputedField(@at (Center, Face, Center) v*p)
-dvpdy_ρ = ComputedField(@at (Center, Center, Center) (∂y(vp)/ρ0))
-
-
-wp = ComputedField(@at (Center, Center, Face) w*p)
-dwpdz_ρ = ComputedField(@at (Center, Center, Center) (∂z(wp)/ρ0))
-
+dwpdz_ρ = KernelComputedField(Center, Center, Center, pressure_redistribution_z_ccc!, model;
+                              computed_dependencies=(w, p),
+                              parameters=ρ0)
 
 SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 
 SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                           field_dependencies=(u, v, w, U))
+                           computed_dependencies=(u, v, w, U))
 #-----
 
+pause
 
 # Analysis (high def) SNAPSHOTS
 #++++
@@ -367,7 +367,7 @@ outputs_snap = (u=u,
                 v=v,
                 w=w,
                 b=b,
-                p=p,
+                p=ComputedField(p),
                 wb_res=ComputedField(wb_res),
                 dwpdz_ρ=dwpdz_ρ,
                 dvpdy_ρ=dvpdy_ρ,
