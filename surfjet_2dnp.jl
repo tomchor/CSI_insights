@@ -2,6 +2,7 @@ using ArgParse
 using Printf
 using Oceananigans; oc = Oceananigans
 using Oceananigans.Utils
+using Oceananigans.Units
 using Oceananigans.Advection: UpwindBiasedThirdOrder
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
@@ -279,6 +280,7 @@ simulation = Simulation(model, Δt=wizard,
 import Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Grids: Center, Face
+using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
 using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
     anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
