@@ -2,7 +2,8 @@ using ArgParse
 using Printf
 using Oceananigans; oc = Oceananigans
 using Oceananigans.Utils
-using Oceananigans.Advection: UpwindBiasedThirdOrder
+using Oceananigans.Units
+using Oceananigans.Advection: UpwindBiasedThirdOrder, WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
 
@@ -49,7 +50,7 @@ jet = args["jet"]
 as_background=true
 include("jetinfo.jl")
 
-simulation_nml = getproperty(SurfaceJetSimulations(), jet)
+simulation_nml = getproperty(SurfaceJetSimulations(Ny=5*2^12, Nz=5*2^6), jet)
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
 
 simname = @sprintf("PNN_%s", name)
@@ -59,10 +60,11 @@ simname = @sprintf("PNN_%s", name)
 # Calculate secondary parameters
 #++++
 b₀ = u₀ * f0
+ρ₀ = 1027
 T_inertial = 2*π/f0
 
 global_attributes = merge(simulation_nml,
-                          (
+                          (LES=1,
                           u_0=u₀, y_0=y₀, z_0=z₀,
                           b0 = b₀, T_inertial = T_inertial,),
                          )
@@ -194,7 +196,7 @@ end
 #-----
 
 
-# Define our model!
+# Define DNS model!
 #++++
 import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
 import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
@@ -240,7 +242,7 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = min(grid.Δy, grid.Δz) / u_scale
-wizard = TimeStepWizard(cfl=0.15,
+wizard = TimeStepWizard(cfl=0.1,
                         diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.1, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 
@@ -270,168 +272,21 @@ simulation = Simulation(model, Δt=wizard,
 #-----
 
 
-# START DIAGNOSTICS
+# START FIRST DIAGNOSTICS
 #++++
-
-# Preamble
-#+++++ Preamble
 import Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Grids: Center, Face
-
-u, v, w = model.velocities
-b = model.tracers.b
-p = sum(model.pressures)
-
-U = model.background_fields.velocities.u
-B = model.background_fields.tracers.b
-
-if as_background
-    u_tot = u + U
-    b_tot = b + B
-else
-    u_tot = u
-    b_tot = b
-end
-#----
-
-
-# Start calculation of snapshot variables
-#++++
-if false
-    νₑ = νz = model.diffusivities.νₑ
-else
-    if :ν in fieldnames(typeof(model.closure))
-        νx = νy = νz = model.closure.ν
-    else
-        νx = νy = model.closure.νx
-        νz = model.closure.νz
-    end
-end
-
-dbdz = ∂z(b_tot)
-ω_x = ∂y(w) - ∂z(v)
-ω_y = ∂z(u_tot) - ∂x(w)
-#ω_z = ∂x(v) - ∂y(u_tot)
-
-wb_res = @at (Center, Center, Center) w*b
-#wb_sgs = @at (Center, Center, Center) νz * dbdz
-
-include("diagnostics.jl")
+using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
 using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
     anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
     pressure_redistribution_y_ccc!, pressure_redistribution_z_ccc! 
 
-tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                          computed_dependencies=(u, v, w))
+const ρ0 = ρ₀
 
-if false
-    ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                            computed_dependencies=(νₑ, u, v, w))
-else
-    ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                            computed_dependencies=(νx, νy, νz, u, v, w))
-end
-
-Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         computed_dependencies=(u_tot, v, b_tot), 
-                         parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
-
-Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         computed_dependencies=(u_tot, v), 
-                         parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
-
-PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         computed_dependencies=(u_tot, v, w, b_tot), 
-                         parameters=f_0)
-
-dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
-                            computed_dependencies=(w, p), 
-                            parameters=1027)
-
-SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                           computed_dependencies=(u, v, w, U))
-
-SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                           computed_dependencies=(u, v, w, U))
-
-outputs_snap = (u=u,
-                v=v,
-                w=w,
-                b=b,
-                p=ComputedField(p),
-                wb_res=ComputedField(wb_res),
-                #wb_sgs=ComputedField(wb_sgs),
-                dwpdz=ComputedField(dwpdz),
-                dbdz=ComputedField(dbdz),
-                ω_x=ComputedField(ω_x),
-                #ω_z=ComputedField(ω_z),
-                tke=tke,
-                ε=ε,
-                Ro=Ro,
-                Ri=Ri,
-                PV=PV,
-                SP_y=SP_y,
-                SP_z=SP_z,
-                )
-
-if false
-    outputs_snap = merge(outputs_snap, (ν_e=νₑ,))
-end
-if as_background
-    outputs_snap = merge(outputs_snap, (u_tot=ComputedField(u_tot),
-                                            b_tot=ComputedField(b_tot),))
-end
-#-----
-
-
-# Analysis (high def) SNAPSHOTS
-#++++
-simulation.output_writers[:out_writer] =
-    NetCDFOutputWriter(model, outputs_snap,
-                       filepath = @sprintf("out.%s.nc", simname),
-                       schedule = TimeInterval(6hours),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float64},
-                       field_slicer = FieldSlicer(i=1),
-                      )
-#-----
-
-
-# Video (low def) SNAPSHOTS
-#++++
-simulation.output_writers[:vid_writer] =
-    NetCDFOutputWriter(model, outputs_snap,
-                       filepath = @sprintf("vid.%s.nc", simname),
-                       schedule = TimeInterval(90minutes),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float32},
-                       field_slicer = FieldSlicer(i=1, with_halos=false),
-                      )
-#-----
-
-# AVG outputs
-#++++
-x_average(F) = AveragedField(F, dims=(1,))
-xz_average(F) = AveragedField(F, dims=(1,3))
-
-slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
-window_average(F) = WindowedSpatialAverage(F; dims=2, field_slicer=slicer)
-
-outputs_avg = map(window_average, outputs_snap)
-
-simulation.output_writers[:avg_writer] =
-    NetCDFOutputWriter(model, outputs_avg,
-                       filepath = @sprintf("avg.%s.nc", simname),
-                       schedule = AveragedTimeInterval(2minutes; window=1.9minutes, stride=1),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float64},
-                      )
-#-----
+include("diagnostics.jl")
+construct_outputs(LES=false, model=model)
 #-----
 
 
@@ -464,8 +319,10 @@ function swap_model(old_model::IncompressibleModel; kwargs...)
     return IncompressibleModel(; new_model_specification...)
 end
 
-model = swap_model(model; closure=closure_LES,
-                   background_fields=bg_fields)
+model = swap_model(model; 
+                   closure = closure_LES,
+                   advection = WENO5(),
+                   background_fields = bg_fields)
 println("\n", model, "\n")
 #-----
 
@@ -505,162 +362,9 @@ simulation = Simulation(model, Δt=wizard,
 #-----
 
 
-# RESTART DIAGNOSTICS
+# REDEFINE DIAGNOSTICS
 #++++
-
-# Preamble
-#+++++ Preamble
-import Oceananigans.Fields: ComputedField, KernelComputedField
-using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
-using Oceananigans.Grids: Center, Face
-
-u, v, w = model.velocities
-b = model.tracers.b
-p = sum(model.pressures)
-
-U = model.background_fields.velocities.u
-B = model.background_fields.tracers.b
-
-if as_background
-    u_tot = u + U
-    b_tot = b + B
-else
-    u_tot = u
-    b_tot = b
-end
-#----
-
-
-# Start calculation of snapshot variables
-#++++
-if true
-    νₑ = νz = model.diffusivities.νₑ
-else
-    if :ν in fieldnames(typeof(model.closure))
-        νx = νy = νz = model.closure.ν
-    else
-        νx = νy = model.closure.νx
-        νz = model.closure.νz
-    end
-end
-
-dbdz = ∂z(b_tot)
-ω_x = ∂y(w) - ∂z(v)
-ω_y = ∂z(u_tot) - ∂x(w)
-ω_z = ∂x(v) - ∂y(u_tot)
-
-wb_res = @at (Center, Center, Center) w*b
-#wb_sgs = @at (Center, Center, Center) νz * dbdz
-
-include("diagnostics.jl")
-using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
-using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
-    anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
-    vertical_pressure_distribution_ccc! 
-
-tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                          computed_dependencies=(u, v, w))
-
-if true
-    ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                            computed_dependencies=(νₑ, u, v, w))
-else
-    ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                            computed_dependencies=(νx, νy, νz, u, v, w))
-end
-
-Ri = KernelComputedField(Center, Center, Face, richardson_number_ccf!, model;
-                         computed_dependencies=(u_tot, v, b_tot), 
-                         parameters=(N2_bg=0, dUdz_bg=0, dVdz_bg=0))
-
-Ro = KernelComputedField(Face, Face, Center, rossby_number_ffc!, model;
-                         computed_dependencies=(u_tot, v), 
-                         parameters=(dUdy_bg=0, dVdx_bg=0, f₀=f_0))
-
-PV = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_fff!, model;
-                         computed_dependencies=(u_tot, v, w, b_tot), 
-                         parameters=f_0)
-
-dwpdz = KernelComputedField(Center, Center, Center, vertical_pressure_distribution_ccc!, model;
-                            computed_dependencies=(w, p), 
-                            parameters=1027)
-
-SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                           computed_dependencies=(u, v, w, U))
-
-SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                           computed_dependencies=(u, v, w, U))
-
-outputs_snap = (u=u,
-                  v=v,
-                  w=w,
-                  b=b,
-                  p=ComputedField(p),
-                  wb_res=ComputedField(wb_res),
-                  #wb_sgs=ComputedField(wb_sgs),
-                  dwpdz=ComputedField(dwpdz),
-                  dbdz=ComputedField(dbdz),
-                  ω_x=ComputedField(ω_x),
-                  #ω_z=ComputedField(ω_z),
-                  tke=tke,
-                  ε=ε,
-                  Ro=Ro,
-                  Ri=Ri,
-                  PV=PV,
-                  SP_y=SP_y,
-                  SP_z=SP_z,
-                  )
-
-if true
-    outputs_snap = merge(outputs_snap, (ν_e=νₑ,))
-end
-if as_background
-    outputs_snap = merge(outputs_snap, (u_tot=ComputedField(u_tot),
-                                            b_tot=ComputedField(b_tot),))
-end
-#-----
-
-
-# Analysis (high def) SNAPSHOTS
-#++++
-simulation.output_writers[:out_writer] =
-    NetCDFOutputWriter(model, outputs_snap,
-                       filepath = @sprintf("out.%s.nc", simname),
-                       schedule = TimeInterval(6hours),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float64},
-                       field_slicer = FieldSlicer(i=1),
-                      )
-#-----
-
-
-# Video (low def) SNAPSHOTS
-#++++
-simulation.output_writers[:vid_writer] =
-    NetCDFOutputWriter(model, outputs_snap,
-                       filepath = @sprintf("vid.%s.nc", simname),
-                       schedule = TimeInterval(90minutes),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float32},
-                       field_slicer = FieldSlicer(i=1, with_halos=false),
-                      )
-#-----
-
-# AVG outputs
-#++++
-outputs_avg = map(window_average, outputs_snap)
-
-simulation.output_writers[:avg_writer] =
-    NetCDFOutputWriter(model, outputs_avg,
-                       filepath = @sprintf("avg.%s.nc", simname),
-                       schedule = AveragedTimeInterval(2minutes; window=1.9minutes, stride=1),
-                       mode = "c",
-                       global_attributes = global_attributes,
-                       array_type = Array{Float64},
-                      )
-#-----
+construct_outputs(LES=true, model=model)
 #-----
 
 # Run the simulation!

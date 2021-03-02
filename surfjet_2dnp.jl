@@ -3,7 +3,7 @@ using Printf
 using Oceananigans; oc = Oceananigans
 using Oceananigans.Utils
 using Oceananigans.Units
-using Oceananigans.Advection: UpwindBiasedThirdOrder
+using Oceananigans.Advection: UpwindBiasedThirdOrder, WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
 
@@ -208,7 +208,7 @@ else
 end
 model = IncompressibleModel(architecture = arch,
                             grid = grid,
-                            advection = UpwindBiasedThirdOrder(),
+                            advection = WENO5(),
                             timestepper = :RungeKutta3,
                             closure = closure,
                             coriolis = FPlane(f=f0),
