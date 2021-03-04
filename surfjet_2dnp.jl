@@ -63,14 +63,19 @@ simname = @sprintf("FNN_%s", name)
 b₀ = u₀ * f0
 ρ₀ = 1027
 T_inertial = 2*π/f0
+y_r = y₀ + √2/4 * σy
+z_r = 0
+Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
+Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
 
-global_attributes = merge(simulation_nml,
-                          (LES=Int(LES),
-                          u_0=u₀, y_0=y₀, z_0=z₀,
-                          b0 = b₀, T_inertial = T_inertial,),
-                         )
+secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+                         (;y_r, z_r, Ro_r, Ri_r, T_inertial))
+
+global_attributes = merge(simulation_nml, secondary_params)
 println("\n", global_attributes, "\n")
 #-----
+
+
 
 # Set GRID
 #++++  GRID

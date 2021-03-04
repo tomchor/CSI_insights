@@ -114,13 +114,13 @@ function get_outputs_tuple(; LES=false, model=model)
                                 computed_dependencies=(νx, νy, νz, u, v, w))
     end
     
-    PV_bt = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_barotropic_fff!, model;
-                                computed_dependencies=(u_tot, v, b_tot), 
-                                parameters=f_0)
+    PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_barotropic_fff!, model;
+                                 computed_dependencies=(u_tot, v, b_tot), 
+                                 parameters=f_0)
     
-    PV_bc = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_baroclinic_fff!, model;
-                                computed_dependencies=(u_tot, v, w, b_tot), 
-                                parameters=f_0)
+    PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_baroclinic_fff!, model;
+                                 computed_dependencies=(u_tot, v, w, b_tot), 
+                                 parameters=f_0)
     
     dvpdy_ρ = KernelComputedField(Center, Center, Center, pressure_redistribution_y_ccc!, model;
                                   computed_dependencies=(v, p),
@@ -152,8 +152,8 @@ function get_outputs_tuple(; LES=false, model=model)
                     ω_x=ComputedField(ω_x),
                     tke=tke,
                     ε=ε,
-                    PV_bc=PV_bc,
-                    PV_bt=PV_bt,
+                    PV_ver=PV_ver,
+                    PV_hor=PV_hor,
                     SP_y=SP_y,
                     SP_z=SP_z,
                     )

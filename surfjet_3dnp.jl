@@ -62,12 +62,15 @@ simname = @sprintf("PNN_%s", name)
 b₀ = u₀ * f0
 ρ₀ = 1027
 T_inertial = 2*π/f0
+y_r = y₀ + √2/4 * σy
+z_r = 0
+Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
+Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
 
-global_attributes = merge(simulation_nml,
-                          (LES=1,
-                          u_0=u₀, y_0=y₀, z_0=z₀,
-                          b0 = b₀, T_inertial = T_inertial,),
-                         )
+secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+                         (;y_r, z_r, Ro_r, Ri_r, T_inertial))
+
+global_attributes = merge(simulation_nml, secondary_params)
 println("\n", global_attributes, "\n")
 #-----
 
@@ -202,18 +205,18 @@ import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDiss
 import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
 closure_LES = SmagorinskyLilly(C=0.23)
 #closure = AnisotropicMinimumDissipation()
-closure_cns = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=1e-3, κz=1e-3)
+closure_cns = AnisotropicDiffusivity(νh=5e-2, κh=5e-2, νz=5e-3, κz=5e-3)
 model_kwargs = (architecture = arch,
-                            grid = grid,
-                            advection = UpwindBiasedThirdOrder(),
-                            timestepper = :RungeKutta3,
-                            coriolis = FPlane(f=f0),
-                            tracers = (:b,),
-                            buoyancy = BuoyancyTracer(),
-                            boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                            forcing = (u=full_sponge, v=full_sponge, w=full_sponge, b=full_sponge),
-                            background_fields = bg_fields,
-                            )
+                grid = grid,
+                advection = WENO5(),
+                timestepper = :RungeKutta3,
+                coriolis = FPlane(f=f0),
+                tracers = (:b,),
+                buoyancy = BuoyancyTracer(),
+                boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
+                forcing = (u=full_sponge, v=full_sponge, w=full_sponge, b=full_sponge),
+                background_fields = bg_fields,
+                )
 model = IncompressibleModel(; model_kwargs..., closure=closure_cns)
 println("\n", model, "\n")
 #-----
@@ -224,17 +227,6 @@ set!(model, u=u_ic, v=v_ic, b=b_ic)
 
 v̄ = sum(model.velocities.v.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
 model.velocities.v.data.parent .-= v̄
-
-
-if false
-    using Plots; pyplot()
-    xC = oc.Grids.xnodes(Center, grid)
-    yC = oc.Grids.ynodes(Center, grid)
-    zC = oc.Grids.znodes(Center, grid)
-    zF = oc.Grids.znodes(Face, grid)
-
-    contourf(y, z, interior(model.tracers.b)[1,:,:]', levels=30)
-end
 #-----
 
 
@@ -242,7 +234,7 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = min(grid.Δy, grid.Δz) / u_scale
-wizard = TimeStepWizard(cfl=0.1,
+wizard = TimeStepWizard(cfl=0.05,
                         diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.1, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 
