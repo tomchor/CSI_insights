@@ -67,7 +67,7 @@ z_r = 0
 Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
 Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
 
-secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+secondary_params = merge((u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
                          (;y_r, z_r, Ro_r, Ri_r, T_inertial))
 
 global_attributes = merge(simulation_nml, secondary_params)
@@ -271,9 +271,9 @@ using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Grids: Center, Face
 using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
-using Oceanostics.TurbulentKineticEnergyTerms: kinetic_energy_ccc!, 
-    anisotropic_viscous_dissipation_ccc!, isotropic_viscous_dissipation_ccc!,
-    pressure_redistribution_y_ccc!, pressure_redistribution_z_ccc! 
+using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
+                                               IsotropicViscousDissipation, AnisotropicViscousDissipation,
+                                               PressureRedistribution_y, PressureRedistribution_z
 
 const ρ0 = ρ₀
 
