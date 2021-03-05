@@ -33,8 +33,7 @@ end
 
 
 #++++ PV components
-
-@kernel function ertel_potential_vorticity_barotropic_fff!(PV, grid, u, v, b, f₀)
+@kernel function ertel_potential_vorticity_vertical_fff!(PV, grid, u, v, b, f₀)
     i, j, k = @index(Global, NTuple)
 
     dVdx =  ℑzᵃᵃᶠ(i, j, k, grid, ∂xᶠᵃᵃ, v) # C, F, C  → F, F, C → F, F, F
@@ -47,7 +46,7 @@ end
 
 
 
-@kernel function ertel_potential_vorticity_baroclinic_fff!(PV, grid, u, v, w, b, f₀)
+@kernel function ertel_potential_vorticity_horizontal_fff!(PV, grid, u, v, w, b, f₀)
     i, j, k = @index(Global, NTuple)
 
     dWdy =  ℑxᶠᵃᵃ(i, j, k, grid, ∂yᵃᶠᵃ, w) # C, C, F  → C, F, F  → F, F, F
@@ -102,33 +101,25 @@ function get_outputs_tuple(; LES=false, model=model)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
-    
-    tke = KernelComputedField(Center, Center, Center, kinetic_energy_ccc!, model;
-                              computed_dependencies=(u, v, w))
+    tke = KineticEnergy(model, u, v, w)
     
     if LES
-        ε = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_ccc!, model;
-                                computed_dependencies=(νₑ, u, v, w))
+        ε = IsotropicViscousDissipation(model, νₑ, u, v, w)
     else
-        ε = KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_ccc!, model;
-                                computed_dependencies=(νx, νy, νz, u, v, w))
+        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w)
     end
-    
-    PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_barotropic_fff!, model;
+
+    PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
                                  computed_dependencies=(u_tot, v, b_tot), 
                                  parameters=f_0)
     
-    PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_baroclinic_fff!, model;
+    PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
                                  computed_dependencies=(u_tot, v, w, b_tot), 
                                  parameters=f_0)
     
-    dvpdy_ρ = KernelComputedField(Center, Center, Center, pressure_redistribution_y_ccc!, model;
-                                  computed_dependencies=(v, p),
-                                  parameters=ρ0)
-    
-    dwpdz_ρ = KernelComputedField(Center, Center, Center, pressure_redistribution_z_ccc!, model;
-                                  computed_dependencies=(w, p),
-                                  parameters=ρ0)
+    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀)
+    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀)
+
     
     SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
                                computed_dependencies=(u, v, w, U))
@@ -141,22 +132,22 @@ function get_outputs_tuple(; LES=false, model=model)
     # Assemble the outputs tuple
     #++++
     outputs = (u=u,
-                    v=v,
-                    w=w,
-                    b=b,
-                    p=ComputedField(p),
-                    wb_res=ComputedField(wb_res),
-                    dwpdz_ρ=dwpdz_ρ,
-                    dvpdy_ρ=dvpdy_ρ,
-                    dbdz=ComputedField(dbdz),
-                    ω_x=ComputedField(ω_x),
-                    tke=tke,
-                    ε=ε,
-                    PV_ver=PV_ver,
-                    PV_hor=PV_hor,
-                    SP_y=SP_y,
-                    SP_z=SP_z,
-                    )
+               v=v,
+               w=w,
+               b=b,
+               p=ComputedField(p),
+               wb_res=ComputedField(wb_res),
+               dwpdz_ρ=dwpdz_ρ,
+               dvpdy_ρ=dvpdy_ρ,
+               dbdz=ComputedField(dbdz),
+               ω_x=ComputedField(ω_x),
+               tke=tke,
+               ε=ε,
+               PV_ver=PV_ver,
+               PV_hor=PV_hor,
+               SP_y=SP_y,
+               SP_z=SP_z,
+               )
     
     if LES
         outputs = merge(outputs, (ν_e=νₑ,))
@@ -212,9 +203,9 @@ function construct_outputs(; LES=false, model=model)
     xz_average(F) = AveragedField(F, dims=(1,3))
     
     slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
-    window_average(F) = WindowedSpatialAverage(F; dims=2, field_slicer=slicer)
+    hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2), field_slicer=slicer)
     
-    outputs_avg = map(window_average, outputs_snap)
+    outputs_avg = map(hor_window_average, outputs_snap)
     
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
