@@ -157,6 +157,8 @@ function get_outputs_tuple(; LES=false, model=model)
                                   b_tot=ComputedField(b_tot),))
     end
     #----
+
+    return outputs
 end
 #----
 
