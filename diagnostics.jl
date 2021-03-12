@@ -215,7 +215,7 @@ function construct_outputs(; LES=false, model=model)
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
                            filepath = @sprintf("avg.%s.nc", simname),
-                           schedule = AveragedTimeInterval(10minutes; window=9.9minutes, stride=1),
+                           schedule = AveragedTimeInterval(10minutes; window=9.99minutes, stride=5),
                            mode = "c",
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
