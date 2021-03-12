@@ -68,6 +68,8 @@ end
 
 #++++ CREATE SNAPSHOT OUTPUTS
 function get_outputs_tuple(; LES=false, model=model)
+    
+    #++++ Preamble
     u, v, w = model.velocities
     b = model.tracers.b
     p = sum(model.pressures)
@@ -84,8 +86,6 @@ function get_outputs_tuple(; LES=false, model=model)
     end
     
     
-    # Start calculation of snapshot variables
-    #++++
     if LES
         νₑ = νz = model.diffusivities.νₑ
     else
@@ -96,7 +96,10 @@ function get_outputs_tuple(; LES=false, model=model)
             νz = model.closure.νz
         end
     end
+    #----
     
+    # Start calculation of snapshot variables
+    #++++
     dbdz = ∂z(b_tot)
     ω_x = ∂y(w) - ∂z(v)
     

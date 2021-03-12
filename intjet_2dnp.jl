@@ -169,12 +169,12 @@ end
 
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
 if as_background
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
+    full_sponge_0 = Relaxation(rate=1/30minute, mask=full_mask, target=0)
     forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
 else
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
-    full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
+    full_sponge_0 = Relaxation(rate=1/30minute, mask=full_mask, target=0)
+    full_sponge_u = Relaxation(rate=1/30minute, mask=full_mask, target=u_g)
+    full_sponge_b = Relaxation(rate=1/30minute, mask=full_mask, target=b_g)
     forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
 end
 #-----
@@ -210,7 +210,7 @@ if LES
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
 #    closure = IsotropicDiffusivity(ν=1e-5, κ=1e-5)
-    closure = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=1e-4, κz=1e-4)
+    closure = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=8e-4, κz=8e-4)
 end
 model = IncompressibleModel(architecture = arch,
                             grid = grid,
@@ -276,7 +276,7 @@ end
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         #stop_time=5*T_inertial,
-                        stop_time=10*T_inertial,
+                        stop_time=20*T_inertial,
                         iteration_interval=5, progress=progress,
                         stop_iteration=Inf,)
 #-----

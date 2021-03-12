@@ -2,9 +2,9 @@ using Parameters
 
 @with_kw struct InteriorJetSimulations
     f0 = 1e-4
-    Ny = 2^12
+    Ny = 2^13
     Nz = 2^9
-    Ly = 10_000 # m
+    Ly = 15_000 # m
     Lz = 500 # m
 
     JD15exp = (name = "JD15exp",
