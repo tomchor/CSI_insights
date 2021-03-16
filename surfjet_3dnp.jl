@@ -205,7 +205,7 @@ import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDiss
 import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
 closure_LES = SmagorinskyLilly(C=0.23)
 #closure = AnisotropicMinimumDissipation()
-closure_cns = AnisotropicDiffusivity(νh=5e-2, κh=5e-2, νz=5e-3, κz=5e-3)
+closure_cns = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 model_kwargs = (architecture = arch,
                 grid = grid,
                 advection = WENO5(),

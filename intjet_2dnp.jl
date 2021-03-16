@@ -52,7 +52,7 @@ as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz = simulation_nml
 
 simname = @sprintf("FNN_%s", name)
 #-----
@@ -209,8 +209,7 @@ if LES
     closure = SmagorinskyLilly(C=0.23)
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
-#    closure = IsotropicDiffusivity(ν=1e-5, κ=1e-5)
-    closure = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=8e-4, κz=8e-4)
+    closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
 model = IncompressibleModel(architecture = arch,
                             grid = grid,
@@ -275,9 +274,8 @@ end
 # Finally define Simulation!
 #++++
 simulation = Simulation(model, Δt=wizard, 
-                        #stop_time=5*T_inertial,
                         stop_time=20*T_inertial,
-                        iteration_interval=5, progress=progress,
+                        iteration_interval=10, progress=progress,
                         stop_iteration=Inf,)
 #-----
 

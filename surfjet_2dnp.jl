@@ -217,7 +217,7 @@ if LES
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
 #    closure = IsotropicDiffusivity(ν=1e-5, κ=1e-5)
-    closure = AnisotropicDiffusivity(νh=8e-3, κh=8e-3, νz=1e-4, κz=1e-4)
+    closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
 model = IncompressibleModel(architecture = arch,
                             grid = grid,
@@ -282,9 +282,8 @@ end
 # Finally define Simulation!
 #++++
 simulation = Simulation(model, Δt=wizard, 
-                        #stop_time=5*T_inertial,
                         stop_time=10*T_inertial,
-                        iteration_interval=5, progress=progress,
+                        iteration_interval=10, progress=progress,
                         stop_iteration=Inf,)
 #-----
 
