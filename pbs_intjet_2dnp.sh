@@ -1,13 +1,14 @@
 #!/bin/bash -l
-#SBATCH --account=UMCP0012
-#SBATCH --job-name=i2CIjet01
-#SBATCH --output=out/slurm.out
-#SBATCH --error=out/%x.err
-#SBATCH --time=16:00:00
-#SBATCH --nodes=1
-#SBATCH --gres=gpu:v100:1 # GPUs per Node
-#SBATCH --mail-user=tchor@umd.edu
-#SBATCH --mail-type=ALL
+#PBS -A UMCP0012
+#PBS -N i2CIjet01
+#PBS -o out/pbs.out
+#PBS -e out/%x.err
+#PBS -l walltime=16:00:00
+#PBS -q casper
+#PBS -l select=1:ncpus=1:ngpus=1
+#PBS -l gpu_type=v100
+#PBS -M tchor@umd.edu
+#PBS -m abe
 
 # Clear the environment from any previously loaded modules
 module purge

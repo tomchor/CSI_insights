@@ -47,7 +47,7 @@ jet = args["jet"]
 
 # Get simulation parameters
 #++++
-LES = false
+LES = true
 as_background=false
 include("jetinfo.jl")
 
