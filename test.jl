@@ -284,7 +284,7 @@ end
 include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=NoUnitsProgressMessenger(LES=false, initial_wall_time_seconds=start_time),
+                        iteration_interval=10, progress=ProgressMessenger(LES=false, initial_wall_time_seconds=start_time, SI_units=true),
                         stop_iteration=30,)
 #-----
 
