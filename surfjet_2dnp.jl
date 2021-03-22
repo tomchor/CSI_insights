@@ -295,7 +295,7 @@ simulation = Simulation(model, Δt=wizard,
 const ρ0 = ρ₀
 
 include("diagnostics.jl")
-construct_outputs(model, simulation, LES=LES)
+construct_outputs(model, simulation, LES=LES, simname=simname)
 #-----
 
 

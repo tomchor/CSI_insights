@@ -190,14 +190,14 @@ end
 
 
 #++++ Construct outputs into simulation
-function construct_outputs(model, simulation; LES=false)
+function construct_outputs(model, simulation; LES=false, simname="TEST")
     
     # Output (high def) SNAPSHOTS
     #++++
     outputs_snap = get_outputs_tuple(model, LES=LES)
     simulation.output_writers[:out_writer] =
         NetCDFOutputWriter(model, outputs_snap,
-                           filepath = @sprintf("out.%s.nc", simname),
+                           filepath = @sprintf("data/out.%s.nc", simname),
                            schedule = TimeInterval(6hours),
                            mode = "c",
                            global_attributes = global_attributes,
@@ -215,7 +215,7 @@ function construct_outputs(model, simulation; LES=false)
     
     simulation.output_writers[:vid_writer] =
         NetCDFOutputWriter(model, outputs_vid,
-                           filepath = @sprintf("vid.%s.nc", simname),
+                           filepath = @sprintf("data/vid.%s.nc", simname),
                            schedule = TimeInterval(90minutes),
                            mode = "c",
                            global_attributes = global_attributes,
@@ -237,7 +237,7 @@ function construct_outputs(model, simulation; LES=false)
     
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
-                           filepath = @sprintf("avg.%s.nc", simname),
+                           filepath = @sprintf("data/avg.%s.nc", simname),
                            schedule = AveragedTimeInterval(10minutes; window=9.99minutes, stride=5),
                            mode = "c",
                            global_attributes = global_attributes,

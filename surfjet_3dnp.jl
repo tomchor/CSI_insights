@@ -270,7 +270,7 @@ simulation = Simulation(model, Δt=wizard,
 const ρ0 = ρ₀
 
 include("diagnostics.jl")
-construct_outputs(model, simulation, LES=false)
+construct_outputs(model, simulation, LES=false, simname=simname)
 #-----
 
 
@@ -348,7 +348,7 @@ simulation = Simulation(model, Δt=wizard,
 
 # REDEFINE DIAGNOSTICS
 #++++
-construct_outputs(model, simulation, LES=true)
+construct_outputs(model, simulation, LES=true, simname=simname)
 #-----
 
 # Run the simulation!
