@@ -286,15 +286,15 @@ function (pm::SimulationProgressMessenger)(simulation)
     v_max = maximum(abs, model.velocities.v)
     w_max = maximum(abs, model.velocities.w)
 
-    @info @sprintf("[%06.2f%%] iteration: % 6d,     time: % 10s,     Δt: % 10s,     wall time: % 8s (% 8s / time step)",
+    @info @sprintf("[%06.2f%%] i: % 6d,     time: % 10s,     Δt: % 10s,     wall time: % 8s (% 8s / time step)",
                     progress, i, prettytime(t), prettytime(get_Δt(pm.Δt)), prettytime(current_wall_time), prettytime(wall_time_per_step))
 
     if LES
         ν_max = maximum(abs, model.diffusivities.νₑ)
-        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e m²/s",
+        @info @sprintf("  └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e",
                         u_max, v_max, w_max, pm.adv_cfl(model), pm.dif_cfl(model), ν_max)
     else
-        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e",
+        @info @sprintf("  └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e",
                         u_max, v_max, w_max, pm.adv_cfl(model), pm.dif_cfl(model))
     end
 
