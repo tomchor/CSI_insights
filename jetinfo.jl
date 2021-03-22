@@ -7,7 +7,7 @@ using Parameters
     Ly = 15_000 # m
     Lz = 500 # m
     νh = 2e-2
-    νz = 2e-3
+    νz = 5e-4
     JD15exp = (name = "JD15exp",
              f0 = f0,
              u₀ = 0.35e0,
@@ -68,6 +68,8 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-5,
+              νh = νh,
+              νz = νz,
              )
 
     SIjet1 = (name = "SIsurfjet1",
