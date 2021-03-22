@@ -304,7 +304,7 @@ function (pm::SIUnitsProgressMessenger)(simulation)
 end
 
 
-function NoUnitsProgressMessenger_func(simulation; LES=false, initial_wall_time_seconds=1e-9*time_ns())
+function NoUnitsProgressMessenger_function(simulation; LES=false, initial_wall_time_seconds=1e-9*time_ns())
     model = simulation.model
     Δt = simulation.Δt
 
@@ -336,6 +336,6 @@ function NoUnitsProgressMessenger_func(simulation; LES=false, initial_wall_time_
 end
 
 function NoUnitsProgressMessenger(; kwargs...)
-    return simulation -> NoUnitsProgressMessenger_func(simulation; kwargs...)
+    return simulation -> NoUnitsProgressMessenger_function(simulation; kwargs...)
 end
 #-----
