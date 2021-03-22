@@ -17,7 +17,7 @@ function parse_command_line_arguments()
 
         "--factor"
             help = "Factor to divide Nh and Nz for"
-            default = 16
+            default = 32
             arg_type = Int
 
         "--arch"
@@ -47,7 +47,7 @@ jet = args["jet"]
 
 # Get simulation parameters
 #++++
-LES = true
+LES = false
 as_background=true
 include("jetinfo.jl")
 
@@ -265,7 +265,7 @@ wizard = TimeStepWizard(cfl=0.5,
 
 advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
 difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-start_time = time_ns()
+start_time = 1e-9 * time_ns()
 function progress(sim)
     msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
                   sim.model.clock.iteration,
@@ -284,7 +284,7 @@ end
 include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=SimulationProgressMessenger(wizard, LES=false),
+                        iteration_interval=10, progress=NoUnitsProgressMessenger(LES=false, initial_wall_time_seconds=start_time),
                         stop_iteration=30,)
 #-----
 

@@ -251,7 +251,7 @@ end
 
 
 #+++++ Progress messenger
-mutable struct SimulationProgressMessenger{T, A, D, Δ, L} <: Function
+mutable struct SIUnitsProgressMessenger{T, A, D, Δ, L} <: Function
     wall_time₀ :: T  # Wall time at simulation start
     wall_time⁻ :: T  # Wall time at previous calback
        adv_cfl :: A
@@ -260,7 +260,7 @@ mutable struct SimulationProgressMessenger{T, A, D, Δ, L} <: Function
            LES :: L
 end
 
-SimulationProgressMessenger(Δt; LES=false) = SimulationProgressMessenger(1e-9 * time_ns(), 
+SIUnitsProgressMessenger(Δt; LES=false) = SIUnitsProgressMessenger(1e-9 * time_ns(), 
                                                                          1e-9 * time_ns(), 
                                                                          AdvectiveCFL(Δt),
                                                                          DiffusiveCFL(Δt), 
@@ -270,7 +270,7 @@ SimulationProgressMessenger(Δt; LES=false) = SimulationProgressMessenger(1e-9 *
 get_Δt(Δt) = Δt
 get_Δt(wizard::TimeStepWizard) = wizard.Δt
 
-function (pm::SimulationProgressMessenger)(simulation)
+function (pm::SIUnitsProgressMessenger)(simulation)
     model = simulation.model
 
     i, t = model.clock.iteration, model.clock.time
@@ -291,17 +291,51 @@ function (pm::SimulationProgressMessenger)(simulation)
 
     if LES
         ν_max = maximum(abs, model.diffusivities.νₑ)
-        @info @sprintf("  └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e",
+        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e) m/s,     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e m²/s",
                         u_max, v_max, w_max, pm.adv_cfl(model), pm.dif_cfl(model), ν_max)
     else
-        @info @sprintf("  └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e",
+        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e) m/s,     adv CFL: %.2e,     diff CFL: %.2e",
                         u_max, v_max, w_max, pm.adv_cfl(model), pm.dif_cfl(model))
     end
-
-
 
     @info ""
 
     return nothing
+end
+
+
+function NoUnitsProgressMessenger_func(simulation; LES=false, initial_wall_time_seconds=1e-9*time_ns())
+    model = simulation.model
+    Δt = simulation.Δt
+
+    i, t = model.clock.iteration, model.clock.time
+
+    progress = 100 * (t / simulation.stop_time)
+
+    current_wall_time = 1e-9 * time_ns() - initial_wall_time_seconds
+
+    u_max = maximum(abs, model.velocities.u)
+    v_max = maximum(abs, model.velocities.v)
+    w_max = maximum(abs, model.velocities.w)
+
+    @info @sprintf("[%06.2f%%] i: % 6d,     time: %13.2f,     Δt: %13.2f,     wall time: % 8s",
+                   progress, i, t, get_Δt(Δt), prettytime(current_wall_time))
+
+    if LES
+        ν_max = maximum(abs, model.diffusivities.νₑ)
+        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e",
+                       u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model), ν_max)
+    else
+        @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e",
+                       u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model))
+    end
+
+    @info ""
+
+    return nothing
+end
+
+function NoUnitsProgressMessenger(; kwargs...)
+    return simulation -> NoUnitsProgressMessenger_func(simulation; kwargs...)
 end
 #-----

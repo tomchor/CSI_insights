@@ -260,7 +260,7 @@ end
 include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=5, progress=SimulationProgressMessenger(wizard, LES=false),
+                        iteration_interval=5, progress=SIUnitsProgressMessenger(wizard, LES=false),
                         stop_iteration=400,)
 #-----
 
@@ -341,7 +341,7 @@ end
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=SimulationProgressMessenger(wizard, LES=true),
+                        iteration_interval=10, progress=SIUnitsProgressMessenger(wizard, LES=true),
                         stop_iteration=Inf,)
 #-----
 
