@@ -51,7 +51,7 @@ as_background=true
 include("jetinfo.jl")
 
 simulation_nml = getproperty(SurfaceJetSimulations(Ny=5*2^12, Nz=5*2^6), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀ = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz = simulation_nml
 
 simname = @sprintf("PNN_%s", name)
 #-----
@@ -155,19 +155,19 @@ heaviside(X) = ifelse(X < 0, zero(X), one(X))
 const Hy = grid.Ly
 const frac = 8
 
-@inline function bottom_mask(x, y, z)
+function bottom_mask(x, y, z)
     z₁ = -Hz; z₀ = z₁ + Hz/frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
-@inline function top_mask(x, y, z)
+function top_mask(x, y, z)
     z₁ = +Hz; z₀ = z₁ - Hz/frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
-@inline function north_mask(x, y, z)
+function north_mask(x, y, z)
     y₁ = Hy; y₀ = y₁ - Hy/frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-@inline function south_mask(x, y, z)
+function south_mask(x, y, z)
     y₁ = 0; y₀ = y₁ + Hy/frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
@@ -266,19 +266,10 @@ simulation = Simulation(model, Δt=wizard,
 
 # START FIRST DIAGNOSTICS
 #++++
-import Oceananigans.Fields: ComputedField, KernelComputedField
-using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
-using Oceananigans.Grids: Center, Face
-using Oceananigans.Diagnostics: WindowedSpatialAverage
-using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
-using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
-                                               IsotropicViscousDissipation, AnisotropicViscousDissipation,
-                                               PressureRedistribution_y, PressureRedistribution_z
-
 const ρ0 = ρ₀
 
 include("diagnostics.jl")
-construct_outputs(LES=false, model=model)
+construct_outputs(model, simulation, LES=false)
 #-----
 
 
@@ -356,7 +347,7 @@ simulation = Simulation(model, Δt=wizard,
 
 # REDEFINE DIAGNOSTICS
 #++++
-construct_outputs(LES=true, model=model)
+construct_outputs(model, simulation, LES=true)
 #-----
 
 # Run the simulation!

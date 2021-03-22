@@ -1,5 +1,17 @@
 using KernelAbstractions: @index, @kernel
+
+using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
+using Oceananigans.Units
 using Oceananigans.Operators
+using Oceananigans.Fields: ComputedField, KernelComputedField
+using Oceananigans.Diagnostics: WindowedSpatialAverage
+using Oceananigans.Grids: Center, Face
+
+using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
+using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
+                                               IsotropicViscousDissipation, AnisotropicViscousDissipation,
+                                               PressureRedistribution_y, PressureRedistribution_z
+
 
 #++++ KERNEL COMPUTED FIELDS
 @inline ψ²(i, j, k, grid, ψ) = @inbounds ψ[i, j, k]^2
@@ -67,7 +79,7 @@ end
 
 
 #++++ CREATE SNAPSHOT OUTPUTS
-function get_outputs_tuple(; LES=false, model=model)
+function get_outputs_tuple(model; LES=false)
     
     #++++ Preamble
     u, v, w = model.velocities
@@ -98,37 +110,48 @@ function get_outputs_tuple(; LES=false, model=model)
     end
     #----
     
+    #++++ Create scratch space
+    ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
+    ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
+    cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
+    fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
+    #----
+
     # Start calculation of snapshot variables
     #++++
-    dbdz = ∂z(b_tot)
+    dbdz = @at (Center, Center, Face) ∂z(b_tot)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
-    tke = KineticEnergy(model, u, v, w)
+    tke = KineticEnergy(model, u, v, w, data=ccc_scratch.data)
     
     if LES
-        ε = IsotropicViscousDissipation(model, νₑ, u, v, w)
+        ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
     else
-        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w)
+        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
     end
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
                                  computed_dependencies=(u_tot, v, b_tot), 
-                                 parameters=f_0)
+                                 parameters=f_0, data=fff_scratch.data)
     
     PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
                                  computed_dependencies=(u_tot, v, w, b_tot), 
-                                 parameters=f_0)
+                                 parameters=f_0, data=fff_scratch.data)
     
-    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀)
-    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀)
+    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, data=ccc_scratch.data)
+    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, data=ccc_scratch.data)
 
     
     SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                               computed_dependencies=(u, v, w, U))
+                               computed_dependencies=(u, v, w, U),
+                               data=ccc_scratch.data,
+                              )
     
     SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                               computed_dependencies=(u, v, w, U))
+                               computed_dependencies=(u, v, w, U),
+                               data=ccc_scratch.data,
+                              )
     #-----
     
     
@@ -138,12 +161,12 @@ function get_outputs_tuple(; LES=false, model=model)
                v=v,
                w=w,
                b=b,
-               p=ComputedField(p),
-               wb_res=ComputedField(wb_res),
+               p=ComputedField(p, data=ccc_scratch.data),
+               wb_res=ComputedField(wb_res, data=ccc_scratch.data),
                dwpdz_ρ=dwpdz_ρ,
                dvpdy_ρ=dvpdy_ρ,
-               dbdz=ComputedField(dbdz),
-               ω_x=ComputedField(ω_x),
+               dbdz=ComputedField(dbdz, data=ccf_scratch.data),
+               ω_x=ComputedField(ω_x, data=cff_scratch.data),
                tke=tke,
                ε=ε,
                PV_ver=PV_ver,
@@ -167,11 +190,11 @@ end
 
 
 #++++ Construct outputs into simulation
-function construct_outputs(; LES=false, model=model)
+function construct_outputs(model, simulation; LES=false)
     
     # Output (high def) SNAPSHOTS
     #++++
-    outputs_snap = get_outputs_tuple(LES=LES, model=model)
+    outputs_snap = get_outputs_tuple(model, LES=LES)
     simulation.output_writers[:out_writer] =
         NetCDFOutputWriter(model, outputs_snap,
                            filepath = @sprintf("out.%s.nc", simname),
