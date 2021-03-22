@@ -257,9 +257,10 @@ end
 
 # Finally define Simulation!
 #++++
+include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=5, progress=progress,
+                        iteration_interval=5, progress=SimulationProgressMessenger(wizard, LES=false),
                         stop_iteration=400,)
 #-----
 
@@ -336,11 +337,11 @@ end
 #-----
 
 
-# REDFINE Simulation!
+# REDEFINE Simulation!
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=5, progress=progress,
+                        iteration_interval=10, progress=SimulationProgressMessenger(wizard, LES=true),
                         stop_iteration=Inf,)
 #-----
 

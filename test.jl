@@ -47,7 +47,7 @@ jet = args["jet"]
 
 # Get simulation parameters
 #++++
-LES = false
+LES = true
 as_background=true
 include("jetinfo.jl")
 
@@ -281,10 +281,11 @@ end
 
 # Finally define Simulation!
 #++++
+include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=progress,
-                        stop_iteration=10,)
+                        iteration_interval=10, progress=SimulationProgressMessenger(wizard, LES=false),
+                        stop_iteration=30,)
 #-----
 
 
@@ -293,7 +294,6 @@ simulation = Simulation(model, Δt=wizard,
 #++++
 const ρ0 = ρ₀
 
-include("diagnostics.jl")
 construct_outputs(model, simulation, LES=LES)
 #-----
 

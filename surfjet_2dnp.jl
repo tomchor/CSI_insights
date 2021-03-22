@@ -281,9 +281,10 @@ end
 
 # Finally define Simulation!
 #++++
+include("diagnostics.jl")
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=progress,
+                        iteration_interval=10, progress=SimulationProgressMessenger(wizard, LES=LES),
                         stop_iteration=Inf,)
 #-----
 
