@@ -48,7 +48,7 @@ jet = args["jet"]
 # Get simulation parameters
 #++++
 LES = false
-as_background=false
+as_background=true
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
@@ -254,28 +254,14 @@ u_scale = abs(u₀)
 wizard = TimeStepWizard(cfl=0.5,
                         diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.5seconds)
-
-advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
-difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-start_time = time_ns()
-function progress(sim)
-    msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
-                  sim.model.clock.iteration,
-                  prettytime(sim.model.clock.time),
-                  prettytime(1e-9 * (time_ns() - start_time)),
-                  prettytime(sim.Δt.Δt),
-                  difCFL(sim.model),
-                  advCFL(sim.model),
-                  )
-    return msg
-end
 #-----
 
 # Finally define Simulation!
 #++++
+using Oceanostics: ProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=20*T_inertial,
-                        iteration_interval=10, progress=progress,
+                        iteration_interval=10, progress=ProgressMessenger(LES=LES),
                         stop_iteration=Inf,)
 #-----
 
@@ -292,7 +278,7 @@ using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy,
 
 const ρ0 = ρ₀
 include("diagnostics.jl")
-construct_outputs(LES=LES, model=model)
+construct_outputs(model, simulation, LES=LES, simname=simname)
 #-----
 
 
