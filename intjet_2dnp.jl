@@ -251,17 +251,19 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.5,
-                        diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.5seconds)
+wizard = TimeStepWizard(cfl=0.2,
+                        diffusive_cfl=0.6,
+                        Δt=Δt, max_change=1.01, min_change=0.02, max_Δt=Inf, min_Δt=0.5seconds)
 #-----
 
 # Finally define Simulation!
 #++++
+start_time = 1e-9*time_ns()
 using Oceanostics: ProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=20*T_inertial,
-                        iteration_interval=10, progress=ProgressMessenger(LES=LES),
+                        iteration_interval=5, progress=ProgressMessenger(LES=LES,
+                                                                         initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
