@@ -7,7 +7,7 @@ using Parameters
     Ly = 15_000 # m
     Lz = 500 # m
     νh = 2e-2
-    νz = 5e-4
+    νz = 1e-3
     JD15exp = (name = "JD15exp",
              f0 = f0,
              u₀ = 0.35e0,
