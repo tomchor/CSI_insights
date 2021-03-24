@@ -53,7 +53,7 @@ end
     Lz = 80 # m
     N2_pyc = 1e-6 # 1/s²
     νh=8e-3
-    νz=1e-4
+    νz=5e-4
 
     CIjet1 = (name = "CIsurfjet1",
               f0 = f0,
@@ -85,6 +85,8 @@ end
               y₀ = +Ly/2, # m
               z₀ = 0, # m
               N2_pyc = 1e-5,
+              νh = νh,
+              νz = νz,
               )
 
     SIjet2 = (name = "SIsurfjet2",
@@ -100,6 +102,8 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
+              νh = νh,
+              νz = νz,
              )
 
 
@@ -116,6 +120,8 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
+              νh = νh,
+              νz = νz,
              )
 
 
@@ -133,6 +139,8 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
+              νh = νh,
+              νz = νz,
              )
 
 
@@ -150,6 +158,8 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 2.5e-7,
+              νh = νh,
+              νz = νz,
              )
 
 
@@ -167,6 +177,8 @@ end
                y₀ = +Ly/2,
                z₀ = 0,
                N2_pyc = 1e-5,
+              νh = νh,
+              νz = νz,
              )
 
 

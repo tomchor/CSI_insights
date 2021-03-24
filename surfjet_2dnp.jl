@@ -105,24 +105,24 @@ const z_0 = z₀
 const z_c = -40
 const z_m = z_c - n2_pyc/n2_inf*(z_c+Hz)
 const f_0 = f0
-fy(ψ) = exp(-ψ^2)
-intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
-umask(Y, Z) = Z * fy(Y)
-bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
+@inline fy(ψ) = exp(-ψ^2)
+@inline intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
+@inline umask(Y, Z) = Z * fy(Y)
+@inline bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
 
 u_g(x, y, z, t) = +u_0 * umask((y-y_0)/sig_y, ((z-z_0)/sig_z +1))
-background_strat(z) = ifelse(z < z_c, 
+@inline background_strat(z) = ifelse(z < z_c, 
                              n2_pyc * (z+Hz),
                              n2_inf * (z-z_m))
 b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + background_strat(z)
-dudz_g(x, y, z, t) = +u_0 * (1/sig_z) * fy((y-y_0)/sig_y)
+@inline dudz_g(x, y, z, t) = +u_0 * (1/sig_z) * fy((y-y_0)/sig_y)
 #-----
 
 # Setting BCs
 #++++
 if as_background
-    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
-    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
+    surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
+    bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
     U_top_bc = GradientBoundaryCondition(surface_grad)
     U_bot_bc = GradientBoundaryCondition(bottom_grad)
     B_bc = GradientBoundaryCondition(0)
@@ -255,37 +255,23 @@ end
 #-----
 
 
-# Define time-stepping and printing
+# Define time-stepping
 #++++
 u_scale = abs(u₀)
 Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.5,
+wizard = TimeStepWizard(cfl=0.4,
                         diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.5seconds)
-
-advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
-difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-start_time = time_ns()
-function progress(sim)
-    msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
-                  sim.model.clock.iteration,
-                  prettytime(sim.model.clock.time),
-                  prettytime(1e-9 * (time_ns() - start_time)),
-                  prettytime(sim.Δt.Δt),
-                  difCFL(sim.model),
-                  advCFL(sim.model),
-                  )
-    return msg
-end
+                        Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.5seconds)
 #-----
 
 # Finally define Simulation!
 #++++
-include("diagnostics.jl")
+start_time = 1e-9*time_ns()
 using Oceanostics: ProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=ProgressMessenger(LES=LES),
+                        iteration_interval=5,
+                        progress=ProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
