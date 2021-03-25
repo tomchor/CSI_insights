@@ -12,6 +12,7 @@ slurm-*.out
 *.nc_bkp
 slurm*
 out/*.out
+logs/*.out
 *.err
 output.out
 __pycache__/*
