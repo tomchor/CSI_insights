@@ -261,7 +261,7 @@ u_scale = abs(u₀)
 Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
 wizard = TimeStepWizard(cfl=0.4,
                         diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.05, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
+                        Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
 # Finally define Simulation!
