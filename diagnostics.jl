@@ -111,10 +111,10 @@ function get_outputs_tuple(model; LES=false)
     #----
     
     #++++ Create scratch space
-    ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
-    ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
-    cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
-    fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
+    #ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
+    #ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
+    #cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
+    #fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
     #----
 
     # Start calculation of snapshot variables
@@ -123,34 +123,32 @@ function get_outputs_tuple(model; LES=false)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
-    tke = KineticEnergy(model, u, v, w, data=ccc_scratch.data)
+    tke = KineticEnergy(model, u, v, w,)
     
     if LES
-        ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
+        ε = IsotropicViscousDissipation(model, νₑ, u, v, w, )
     else
-        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
+        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, )
     end
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
                                  computed_dependencies=(u_tot, v, b_tot), 
-                                 parameters=f_0, data=fff_scratch.data)
+                                 parameters=f_0, )
     
     PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
                                  computed_dependencies=(u_tot, v, w, b_tot), 
-                                 parameters=f_0, data=fff_scratch.data)
+                                 parameters=f_0, )
     
-    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, data=ccc_scratch.data)
-    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, data=ccc_scratch.data)
+    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, )
+    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, )
 
     
     SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
                                computed_dependencies=(u, v, w, U),
-                               data=ccc_scratch.data,
                               )
     
     SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
                                computed_dependencies=(u, v, w, U),
-                               data=ccc_scratch.data,
                               )
     #-----
     
@@ -161,12 +159,12 @@ function get_outputs_tuple(model; LES=false)
                v=v,
                w=w,
                b=b,
-               p=ComputedField(p, data=ccc_scratch.data),
-               wb_res=ComputedField(wb_res, data=ccc_scratch.data),
+               p=ComputedField(p, ),
+               wb_res=ComputedField(wb_res, ),
                dwpdz_ρ=dwpdz_ρ,
                dvpdy_ρ=dvpdy_ρ,
-               dbdz=ComputedField(dbdz, data=ccf_scratch.data),
-               ω_x=ComputedField(ω_x, data=cff_scratch.data),
+               dbdz=ComputedField(dbdz, ),
+               ω_x=ComputedField(ω_x, ),
                tke=tke,
                ε=ε,
                PV_ver=PV_ver,
@@ -179,8 +177,8 @@ function get_outputs_tuple(model; LES=false)
         outputs = merge(outputs, (ν_e=νₑ,))
     end
     if as_background
-        outputs = merge(outputs, (u_tot=ComputedField(u_tot),
-                                  b_tot=ComputedField(b_tot),))
+        outputs = merge(outputs, (u_tot=ComputedField(u_tot, ),
+                                  b_tot=ComputedField(b_tot, ),))
     end
     #----
 
@@ -238,7 +236,7 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
                            filepath = @sprintf("data/avg.%s.nc", simname),
-                           schedule = AveragedTimeInterval(10minutes; window=9.99minutes, stride=5),
+                           schedule = AveragedTimeInterval(10minutes; window=9.99minutes, stride=10),
                            mode = "c",
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
@@ -250,3 +248,57 @@ end
 
 
 
+#+++++ Progress messenger
+get_Δt(Δt) = Δt
+get_Δt(wizard::TimeStepWizard) = wizard.Δt
+
+
+function ProgressMessenger_function(simulation; LES=false, SI_units=true,
+                                           initial_wall_time_seconds=1e-9*time_ns())
+    model = simulation.model
+    Δt = simulation.Δt
+
+    i, t = model.clock.iteration, model.clock.time
+
+    progress = 100 * (t / simulation.stop_time)
+
+    current_wall_time = 1e-9 * time_ns() - initial_wall_time_seconds
+
+    u_max = maximum(abs, model.velocities.u)
+    v_max = maximum(abs, model.velocities.v)
+    w_max = maximum(abs, model.velocities.w)
+
+    if SI_units
+        @info @sprintf("[%06.2f%%] i: % 6d,     time: % 10s,     Δt: % 10s,     wall time: % 8s",
+                        progress, i, prettytime(t), prettytime(get_Δt(Δt)), prettytime(current_wall_time),)
+        if LES
+            ν_max = maximum(abs, model.diffusivities.νₑ)
+            @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e) m/s,     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e m²/s",
+                           u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model), ν_max)
+        else
+            @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e) m/s,     adv CFL: %.2e,     diff CFL: %.2e",
+                           u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model))
+        end
+
+    else
+        @info @sprintf("[%06.2f%%] i: % 6d,     time: %13.2f,     Δt: %13.2f,     wall time: % 8s",
+                       progress, i, t, get_Δt(Δt), prettytime(current_wall_time))
+        if LES
+            ν_max = maximum(abs, model.diffusivities.νₑ)
+            @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e,     ν_max: %.2e",
+                           u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model), ν_max)
+        else
+            @info @sprintf("          └── u⃗_max: (%.2e, %.2e, %.2e),     adv CFL: %.2e,     diff CFL: %.2e",
+                           u_max, v_max, w_max, AdvectiveCFL(Δt)(model), DiffusiveCFL(Δt)(model))
+        end
+    end
+
+    @info ""
+
+    return nothing
+end
+
+function ProgressMessenger(; kwargs...)
+    return simulation -> ProgressMessenger_function(simulation; kwargs...)
+end
+#----

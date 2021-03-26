@@ -1,6 +1,7 @@
 #!/bin/bash -l
 #PBS -A UMCP0012
-#PBS -N i2CIjet01
+#PBS -N ij2dCIjet01
+#PBS -k eod
 #PBS -o logs/pbs.out
 #PBS -e logs/%x.err
 #PBS -l walltime=24:00:00
