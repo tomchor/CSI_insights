@@ -112,6 +112,7 @@ function get_outputs_tuple(model; LES=false)
     
     #++++ Create scratch space
     ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
+    fcc_scratch = Field(Face, Center, Center, model.architecture, model.grid)
     ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
     cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
     fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
@@ -179,8 +180,8 @@ function get_outputs_tuple(model; LES=false)
         outputs = merge(outputs, (ν_e=νₑ,))
     end
     if as_background
-        outputs = merge(outputs, (u_tot=ComputedField(u_tot),
-                                  b_tot=ComputedField(b_tot),))
+        outputs = merge(outputs, (u_tot=ComputedField(u_tot, data=fcc_scratch.data),
+                                  b_tot=ComputedField(b_tot, data=ccc_scratch.data),))
     end
     #----
 
@@ -238,7 +239,7 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
                            filepath = @sprintf("data/avg.%s.nc", simname),
-                           schedule = AveragedTimeInterval(10minutes; window=9.99minutes, stride=5),
+                           schedule = TimeInterval(2minutes),
                            mode = "c",
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
