@@ -266,12 +266,13 @@ wizard = TimeStepWizard(cfl=0.4,
 
 # Finally define Simulation!
 #++++
+include("diagnostics.jl")
 start_time = 1e-9*time_ns()
-using Oceanostics: ProgressMessenger
+using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
                         iteration_interval=5,
-                        progress=ProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
+                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
@@ -280,8 +281,6 @@ simulation = Simulation(model, Δt=wizard,
 # DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-
-include("diagnostics.jl")
 construct_outputs(model, simulation, LES=LES, simname=simname)
 #-----
 
