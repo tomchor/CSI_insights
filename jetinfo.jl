@@ -57,6 +57,7 @@ end
     N2_pyc = 1e-6 # 1/s²
     νh=8e-3
     νz=5e-4
+    sponge_frac = 1/8
 
     CIjet1 = (name = "CIsurfjet1",
               f0 = f0,
@@ -187,8 +188,8 @@ end
                 z₀ = 0,
                 N2_pyc = 1e-5,
                 νh = νh,
-                sponge_frac = sponge_frac,
                 νz = νz,
+                sponge_frac = sponge_frac,
                 )
 
 
