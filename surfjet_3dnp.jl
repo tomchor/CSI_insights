@@ -47,7 +47,7 @@ jet = args["jet"]
 
 # Get simulation parameters
 #++++
-as_background=true
+as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(SurfaceJetSimulations(Ny=5*2^12, Nz=5*2^6), jet)
@@ -237,31 +237,20 @@ u_scale = abs(u₀)
 wizard = TimeStepWizard(cfl=0.05,
                         diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.1, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
+#----
 
-advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
-difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-start_time = time_ns()
-function progress(sim)
-    msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
-                  sim.model.clock.iteration,
-                  prettytime(sim.model.clock.time),
-                  prettytime(1e-9 * (time_ns() - start_time)),
-                  prettytime(sim.Δt.Δt),
-                  difCFL(sim.model),
-                  advCFL(sim.model),
-                  )
-    return msg
-end
-#-----
 
 
 # Finally define Simulation!
 #++++
 include("diagnostics.jl")
+start_time = 1e-9*time_ns()
+using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=5, progress=progress,
-                        stop_iteration=400,)
+                        iteration_interval=5,
+                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
+                        stop_iteration=Inf,)
 #-----
 
 
