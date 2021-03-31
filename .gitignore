@@ -10,7 +10,6 @@ slurm-*.out
 *.nc
 *.nc.bkp
 *.nc_bkp
-slurm*
 out/*.out
 logs/*.out
 *.err
