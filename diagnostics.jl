@@ -191,7 +191,9 @@ end
 
 
 #++++ Construct outputs into simulation
-function construct_outputs(model, simulation; LES=false, simname="TEST")
+function construct_outputs(model, simulation; 
+                           LES=false, simname="TEST", frac=1/8,
+                           )
     
     # Output (high def) SNAPSHOTS
     #++++
@@ -203,7 +205,6 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
                            mode = "c",
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
-                           field_slicer = FieldSlicer(),
                           )
     #-----
     
@@ -231,7 +232,7 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
     x_average(F) = AveragedField(F, dims=(1,))
     xz_average(F) = AveragedField(F, dims=(1,3))
     
-    slicer = FieldSlicer(j=(grid.Ny÷frac):Int(grid.Ny*(1-1/frac)), with_halos=false)
+    slicer = FieldSlicer(j=Int(grid.Ny*frac):Int(grid.Ny*(1-1*frac)), with_halos=false)
     hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2), field_slicer=slicer)
     
     outputs_avg = map(hor_window_average, outputs_snap)
@@ -245,6 +246,7 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
                            array_type = Array{Float64},
                           )
     #-----
+
 end
 #-----
 
