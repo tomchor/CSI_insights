@@ -48,7 +48,7 @@ jet = args["jet"]
 # Get simulation parameters
 #++++
 LES = false
-as_background=true
+as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
@@ -170,12 +170,12 @@ full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x,
 rate = 1/5hours
 if as_background
     full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
     full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
     full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
 
@@ -258,28 +258,21 @@ wizard = TimeStepWizard(cfl=0.15,
 
 # Finally define Simulation!
 #++++
+include("diagnostics.jl")
 start_time = 1e-9*time_ns()
-using Oceanostics: ProgressMessenger
+using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=20*T_inertial,
-                        iteration_interval=5, progress=ProgressMessenger(LES=LES,
-                                                                         initial_wall_time_seconds=start_time),
+                        iteration_interval=5,
+                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
+
+
 # START DIAGNOSTICS
 #++++
-import Oceananigans.Fields: ComputedField, KernelComputedField
-using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
-using Oceananigans.Grids: Center, Face
-using Oceananigans.Diagnostics: WindowedSpatialAverage
-using Oceanostics.FlowDiagnostics: richardson_number_ccf!, rossby_number_ffc!, ertel_potential_vorticity_fff!
-using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
-                                               IsotropicViscousDissipation, AnisotropicViscousDissipation,
-                                               PressureRedistribution_y, PressureRedistribution_z
-
 const ρ0 = ρ₀
-include("diagnostics.jl")
 construct_outputs(model, simulation, LES=LES, simname=simname)
 #-----
 

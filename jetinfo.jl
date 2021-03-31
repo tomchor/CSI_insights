@@ -7,40 +7,43 @@ using Parameters
     Ly = 15_000 # m
     Lz = 500 # m
     νh = 2e-2
-    νz = 1e-3
+    νz = 2e-3
+    sponge_frac = 1/8
     JD15exp = (name = "JD15exp",
-             f0 = f0,
-             u₀ = 0.35e0,
-             N2_inf = 4.9e-5,
-             N2_pyc = 4.9e-5,
-             Ny = Ny,
-             Nz = Nz,
-             Ly = 5000,
-             Lz = Lz,
-             σy = 1600,
-             σz = 80,
-             y₀ = Ly/2,
-             z₀ = -Lz/2,
-             νz = νz,
-             νh = νh,
-          )
+               f0 = f0,
+               u₀ = 0.35e0,
+               N2_inf = 4.9e-5,
+               N2_pyc = 4.9e-5,
+               Ny = Ny,
+               Nz = Nz,
+               Ly = 5000,
+               Lz = Lz,
+               σy = 1600,
+               σz = 80,
+               y₀ = Ly/2,
+               z₀ = -Lz/2,
+               νz = νz,
+               νh = νh,
+               sponge_frac = sponge_frac,
+               )
 
     CIjet01 = (name = "CIintjet01",
-              f0 = f0,
-              u₀ = -0.4, # m/s
-              N2_inf = 4e-5, # 1/s²
-              N2_pyc = 4e-5, # 1/s²
-              Ny = Ny,
-              Nz = Nz,
-              Ly = Ly,
-              Lz = Lz,
-              σy = 1600, # m
-              σz = 80, # m
-              y₀ = Ly/3, # m
-              z₀ = -Lz/2, # m
-              νz = νz,
-              νh = νh,
-              )
+               f0 = f0,
+               u₀ = -0.4, # m/s
+               N2_inf = 4e-5, # 1/s²
+               N2_pyc = 4e-5, # 1/s²
+               Ny = Ny,
+               Nz = Nz,
+               Ly = Ly,
+               Lz = Lz,
+               σy = 1600, # m
+               σz = 80, # m
+               y₀ = Ly/3, # m
+               z₀ = -Lz/2, # m
+               νz = νz,
+               νh = νh,
+               sponge_frac = sponge_frac,
+               )
 
 end
 
@@ -70,6 +73,7 @@ end
               N2_pyc = 1e-5,
               νh = νh,
               νz = νz,
+              sponge_frac = sponge_frac,
              )
 
     SIjet1 = (name = "SIsurfjet1",
@@ -87,6 +91,7 @@ end
               N2_pyc = 1e-5,
               νh = νh,
               νz = νz,
+              sponge_frac = sponge_frac,
               )
 
     SIjet2 = (name = "SIsurfjet2",
@@ -104,6 +109,7 @@ end
               N2_pyc = 1e-6,
               νh = νh,
               νz = νz,
+              sponge_frac = sponge_frac,
              )
 
 
@@ -122,6 +128,7 @@ end
               N2_pyc = 1e-6,
               νh = νh,
               νz = νz,
+              sponge_frac = sponge_frac,
              )
 
 
@@ -141,6 +148,7 @@ end
               N2_pyc = 1e-6,
               νh = νh,
               νz = νz,
+              sponge_frac = sponge_frac,
              )
 
 
@@ -160,26 +168,28 @@ end
               N2_pyc = 2.5e-7,
               νh = νh,
               νz = νz,
-             )
+              sponge_frac = sponge_frac,
+              )
 
 
 
     Stabjet1 = (name = "stabsurfjet1",
-               f0 = f0,
-               u₀ = -0.08,
-               N2_inf = 1e-5,
-               Ny = Ny,
-               Nz = Nz,
-               Ly = Ly,
-               Lz = Lz,
-               σy = 800,
-               σz = 80,
-               y₀ = +Ly/2,
-               z₀ = 0,
-               N2_pyc = 1e-5,
-              νh = νh,
-              νz = νz,
-             )
+                f0 = f0,
+                u₀ = -0.08,
+                N2_inf = 1e-5,
+                Ny = Ny,
+                Nz = Nz,
+                Ly = Ly,
+                Lz = Lz,
+                σy = 800,
+                σz = 80,
+                y₀ = +Ly/2,
+                z₀ = 0,
+                N2_pyc = 1e-5,
+                νh = νh,
+                sponge_frac = sponge_frac,
+                νz = νz,
+                )
 
 
 end
