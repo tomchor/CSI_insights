@@ -203,7 +203,7 @@ function construct_outputs(model, simulation; LES=false, simname="TEST")
                            mode = "c",
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
-                           field_slicer = FieldSlicer(i=1),
+                           field_slicer = FieldSlicer(),
                           )
     #-----
     
