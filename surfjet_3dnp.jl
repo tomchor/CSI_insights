@@ -50,8 +50,8 @@ jet = args["jet"]
 as_background=false
 include("jetinfo.jl")
 
-simulation_nml = getproperty(SurfaceJetSimulations(Ny=5*2^12, Nz=5*2^6), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz = simulation_nml
+simulation_nml = getproperty(SurfaceJetSimulations(Ny=3*2^13, Nz=3*2^7), jet)
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
 simname = @sprintf("PNN_%s", name)
 #-----
@@ -152,23 +152,22 @@ bbc = TracerBoundaryConditions(grid,
 heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
 @inline mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
-const Hy = grid.Ly
-const frac = 8
+const frac = sponge_frac
 
 function bottom_mask(x, y, z)
-    z₁ = -Hz; z₀ = z₁ + Hz/frac
+    z₁ = -Hz; z₀ = z₁ + Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
 function top_mask(x, y, z)
-    z₁ = +Hz; z₀ = z₁ - Hz/frac
+    z₁ = +Hz; z₀ = z₁ - Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
 function north_mask(x, y, z)
-    y₁ = Hy; y₀ = y₁ - Hy/frac
+    y₁ = Hy; y₀ = y₁ - Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
 function south_mask(x, y, z)
-    y₁ = 0; y₀ = y₁ + Hy/frac
+    y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
 
@@ -249,7 +248,7 @@ using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
                         iteration_interval=5,
-                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
+                        progress=SingleLineProgressMessenger(LES=false, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
@@ -259,7 +258,7 @@ simulation = Simulation(model, Δt=wizard,
 const ρ0 = ρ₀
 
 include("diagnostics.jl")
-construct_outputs(model, simulation, LES=false, simname=simname)
+construct_outputs(model, simulation, LES=false, simname=simname, frac=frac)
 #-----
 
 
@@ -330,14 +329,15 @@ end
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=progress,
+                        iteration_interval=10,
+                        progress=SingleLineProgressMessenger(LES=true, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
 
 
 # REDEFINE DIAGNOSTICS
 #++++
-construct_outputs(model, simulation, LES=true, simname=simname)
+construct_outputs(model, simulation, LES=true, simname=simname, frac=frac)
 #-----
 
 # Run the simulation!

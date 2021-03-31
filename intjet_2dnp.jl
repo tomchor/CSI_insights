@@ -52,7 +52,7 @@ as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
 simname = @sprintf("FNN_%s", name)
 #-----
@@ -147,22 +147,22 @@ bbc = TracerBoundaryConditions(grid,
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
 const Hy = grid.Ly
-const frac = 8
+const frac = sponge_frac
 
 @inline function bottom_mask(x, y, z)
-    z₁ = -Hz; z₀ = z₁ + Hz/frac
+    z₁ = -Hz; z₀ = z₁ + Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
 @inline function top_mask(x, y, z)
-    z₁ = +Hz; z₀ = z₁ - Hz/frac
+    z₁ = +Hz; z₀ = z₁ - Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
 @inline function north_mask(x, y, z)
-    y₁ = Hy; y₀ = y₁ - Hy/frac
+    y₁ = Hy; y₀ = y₁ - Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
 @inline function south_mask(x, y, z)
-    y₁ = 0; y₀ = y₁ + Hy/frac
+    y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
 
@@ -273,7 +273,7 @@ simulation = Simulation(model, Δt=wizard,
 # START DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-construct_outputs(model, simulation, LES=LES, simname=simname)
+construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
 #-----
 
 
