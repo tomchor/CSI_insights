@@ -17,7 +17,7 @@ function parse_command_line_arguments()
 
         "--factor"
             help = "Factor to divide Nh and Nz for"
-            default = 32
+            default = 64
             arg_type = Int
 
         "--arch"
@@ -259,33 +259,23 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.5,
+wizard = TimeStepWizard(cfl=0.4,
                         diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.1, min_change=0.1, max_Δt=Inf, min_Δt=0.5seconds)
-
-advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
-difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-start_time = 1e-9 * time_ns()
-function progress(sim)
-    msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
-                  sim.model.clock.iteration,
-                  prettytime(sim.model.clock.time),
-                  prettytime(1e-9 * (time_ns() - start_time)),
-                  prettytime(sim.Δt.Δt),
-                  difCFL(sim.model),
-                  advCFL(sim.model),
-                  )
-    return msg
-end
+                        Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
 # Finally define Simulation!
 #++++
 include("diagnostics.jl")
+start_time = 1e-9*time_ns()
+using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10, progress=ProgressMessenger(LES=false, initial_wall_time_seconds=start_time, SI_units=true),
-                        stop_iteration=30,)
+                        iteration_interval=5,
+                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
+                        wall_time_limit=5minutes,
+                        stop_iteration=Inf,
+                        )
 #-----
 
 
@@ -294,7 +284,7 @@ simulation = Simulation(model, Δt=wizard,
 #++++
 const ρ0 = ρ₀
 
-construct_outputs(model, simulation, LES=LES)
+checkpointer = construct_outputs(model, simulation, LES=LES)
 #-----
 
 
@@ -304,6 +294,9 @@ println("\n", simulation,
         "\n",)
 
 @printf("---> Starting run!\n")
-run!(simulation)
+run!(simulation, pickup=true)
+
+using Oceananigans.OutputWriters: write_output!
+write_output!(checkpointer, model)
 #-----
 
