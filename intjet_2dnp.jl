@@ -264,6 +264,7 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=20*T_inertial,
+                        wall_time_limit=2hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
@@ -271,10 +272,10 @@ simulation = Simulation(model, Δt=wizard,
 
 
 
-# START DIAGNOSTICS
+# DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
+checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
 #-----
 
 
@@ -284,6 +285,9 @@ println("\n", simulation,
         "\n",)
 
 @printf("---> Starting run!\n")
-run!(simulation)
+run!(simulation, pickup=true)
+
+using Oceananigans.OutputWriters: write_output!
+write_output!(checkpointer, model)
 #-----
 

@@ -258,8 +258,8 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.4,
-                        diffusive_cfl=0.5,
+wizard = TimeStepWizard(cfl=0.8,
+                        diffusive_cfl=0.6,
                         Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
@@ -270,6 +270,7 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
+                        wall_time_limit=2hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
@@ -280,7 +281,7 @@ simulation = Simulation(model, Δt=wizard,
 # DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
+checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
 #-----
 
 
@@ -290,6 +291,9 @@ println("\n", simulation,
         "\n",)
 
 @printf("---> Starting run!\n")
-run!(simulation)
+run!(simulation, pickup=true)
+
+using Oceananigans.OutputWriters: write_output!
+write_output!(checkpointer, model)
 #-----
 
