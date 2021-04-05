@@ -247,6 +247,20 @@ function construct_outputs(model, simulation;
                           )
     #-----
 
+
+    # Checkpointer
+    #+++++
+    simulation.output_writers[:chk_writer] = checkpointer = 
+                                             Checkpointer(model;
+                                             dir="data/",
+                                             prefix = @sprintf("chk.%s", simname),
+                                             schedule = TimeInterval(1T_inertial),
+                                             force = true,
+                                             cleanup = true,
+                                             )
+    #-----
+
+    return checkpointer
 end
 #-----
 
