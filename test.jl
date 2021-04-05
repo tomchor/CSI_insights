@@ -283,7 +283,6 @@ simulation = Simulation(model, Δt=wizard,
 # DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-
 checkpointer = construct_outputs(model, simulation, LES=LES)
 #-----
 
