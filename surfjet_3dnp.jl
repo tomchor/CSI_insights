@@ -50,7 +50,7 @@ jet = args["jet"]
 as_background=false
 include("jetinfo.jl")
 
-simulation_nml = getproperty(SurfaceJetSimulations(Ny=3*2^13, Nz=3*2^7), jet)
+simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7), jet)
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
 simname = @sprintf("PNN_%s", name)
@@ -77,14 +77,14 @@ println("\n", global_attributes, "\n")
 
 # Set GRID
 #++++  GRID
-Nx = Ny÷32
+Nx = Ny÷64
 Lx = (Ly / Ny) * Nx
 topology = (Periodic, Bounded, Bounded)
 grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
-                            x=(0, Lx),
-                            y=(0, Ly),
-                            z=(-Lz, 0), 
-                            topology=topology)
+                              x=(0, Lx),
+                              y=(0, Ly),
+                              z=(-Lz, 0), 
+                              topology=topology)
 println("\n", grid, "\n")
 #-----
 
@@ -149,7 +149,7 @@ bbc = TracerBoundaryConditions(grid,
 
 # Set-up sponge layer
 #++++
-heaviside(X) = ifelse(X < 0, zero(X), one(X))
+@inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
 @inline mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
 const frac = sponge_frac
@@ -172,9 +172,16 @@ function south_mask(x, y, z)
 end
 
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
-full_sponge = Relaxation(rate=1/10minute, mask=full_mask, target=0)
+if as_background
+    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
+else
+    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
+    full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
+    full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
+end
 #-----
-
 
 
 # Set up ICs and/or Background Fields
@@ -213,12 +220,13 @@ model_kwargs = (architecture = arch,
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                forcing = (u=full_sponge, v=full_sponge, w=full_sponge, b=full_sponge),
+                forcing = forcing,
                 background_fields = bg_fields,
                 )
 model = IncompressibleModel(; model_kwargs..., closure=closure_cns)
 println("\n", model, "\n")
 #-----
+
 
 # Adding the ICs
 #++++
@@ -232,12 +240,11 @@ model.velocities.v.data.parent .-= v̄
 # Define time-stepping and printing
 #++++
 u_scale = abs(u₀)
-Δt = min(grid.Δy, grid.Δz) / u_scale
-wizard = TimeStepWizard(cfl=0.05,
+Δt = 1/2*min(grid.Δy, grid.Δz) / u_scale
+wizard = TimeStepWizard(cfl=0.1,
                         diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.1, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
-
 
 
 # Finally define Simulation!
@@ -249,7 +256,7 @@ simulation = Simulation(model, Δt=wizard,
                         stop_time=10*T_inertial,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=false, initial_wall_time_seconds=start_time),
-                        stop_iteration=Inf,)
+                        stop_iteration=400,)
 #-----
 
 
@@ -270,7 +277,6 @@ println("\n", simulation,
 @printf("---> Starting run!\n")
 run!(simulation)
 #-----
-
 
 
 
@@ -303,7 +309,7 @@ println("\n", model, "\n")
 #++++
 u_scale = abs(u₀)
 Δt = simulation.Δt.Δt
-wizard = TimeStepWizard(cfl=0.1,
+wizard = TimeStepWizard(cfl=0.2,
                         diffusive_cfl=0.1,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 
