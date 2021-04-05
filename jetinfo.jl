@@ -2,12 +2,12 @@ using Parameters
 
 @with_kw struct InteriorJetSimulations
     f0 = 1e-4
-    Ny = 2^13
-    Nz = 2^10
+    Ny = 2^14
+    Nz = 2^11
     Ly = 15_000 # m
     Lz = 500 # m
-    νh = 2e-2
-    νz = 2e-3
+    νh = 1.5e-2
+    νz = 8e-4
     sponge_frac = 1/8
     JD15exp = (name = "JD15exp",
                f0 = f0,
