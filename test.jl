@@ -48,7 +48,7 @@ jet = args["jet"]
 # Get simulation parameters
 #++++
 LES = false
-as_background=true
+as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(SurfaceJetSimulations(), jet)
