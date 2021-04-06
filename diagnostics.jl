@@ -194,6 +194,14 @@ end
 function construct_outputs(model, simulation; 
                            LES=false, simname="TEST", frac=1/8,
                            )
+
+    if any(startswith("chk.$simname"), readdir("data"))
+        @info "Checkpoint for $simname found. Assuming this is a pick-up simulation! Setting mode to append."
+        mode = "a"
+    else
+        @info "No checkpoint for $simname found. Setting mode to clobber."
+        mode = "c"
+    end
     
     # Output (high def) SNAPSHOTS
     #++++
@@ -202,7 +210,7 @@ function construct_outputs(model, simulation;
         NetCDFOutputWriter(model, outputs_snap,
                            filepath = @sprintf("data/out.%s.nc", simname),
                            schedule = TimeInterval(6hours),
-                           mode = "c",
+                           mode = mode,
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
                           )
@@ -219,7 +227,7 @@ function construct_outputs(model, simulation;
         NetCDFOutputWriter(model, outputs_vid,
                            filepath = @sprintf("data/vid.%s.nc", simname),
                            schedule = TimeInterval(90minutes),
-                           mode = "c",
+                           mode = mode,
                            global_attributes = global_attributes,
                            array_type = Array{Float32},
                            field_slicer = FieldSlicer(i=1, with_halos=false),
@@ -241,7 +249,7 @@ function construct_outputs(model, simulation;
         NetCDFOutputWriter(model, outputs_avg,
                            filepath = @sprintf("data/avg.%s.nc", simname),
                            schedule = TimeInterval(2minutes),
-                           mode = "c",
+                           mode = mode,
                            global_attributes = global_attributes,
                            array_type = Array{Float64},
                           )
