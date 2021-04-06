@@ -48,7 +48,7 @@ jet = args["jet"]
 # Get simulation parameters
 #++++
 LES = false
-as_background=true
+as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(SurfaceJetSimulations(), jet)
@@ -257,10 +257,10 @@ end
 # Define time-stepping
 #++++
 u_scale = abs(u₀)
-Δt = 1/2 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.6,
+Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
+wizard = TimeStepWizard(cfl=0.5,
                         diffusive_cfl=0.8,
-                        Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
+                        Δt=Δt, max_change=1.05, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
 # Finally define Simulation!

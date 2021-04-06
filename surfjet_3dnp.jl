@@ -224,7 +224,7 @@ model_kwargs = (architecture = arch,
                 forcing = forcing,
                 background_fields = bg_fields,
                 )
-model = IncompressibleModel(; model_kwargs..., closure=closure_cns)
+model = IncompressibleModel(; model_kwargs..., closure=closure_LES)
 println("\n", model, "\n")
 #-----
 
@@ -241,10 +241,11 @@ model.velocities.v.data.parent .-= v̄
 # Define time-stepping and printing
 #++++
 u_scale = abs(u₀)
-Δt = 1/2*min(grid.Δy, grid.Δz) / u_scale
+Δt = 1/5*min(grid.Δy, grid.Δz) / u_scale
 wizard = TimeStepWizard(cfl=0.1,
-                        diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.1, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
+                        diffusive_cfl=0.4,
+                        Δt=Δt, max_change=1.01, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
+cfl_changer(model) = model.clock.time<10hours ? 0.1 : 0.18
 #----
 
 
@@ -255,17 +256,17 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
+                        wall_time_limit=23.5hours,
                         iteration_interval=5,
-                        progress=SingleLineProgressMessenger(LES=false, initial_wall_time_seconds=start_time),
-                        stop_iteration=400,)
+                        progress=SingleLineProgressMessenger(LES=true, initial_wall_time_seconds=start_time),
+                        stop_iteration=Inf,)
 #-----
 
 
 # START FIRST DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-pause
-construct_outputs(model, simulation, LES=false, simname=simname, frac=frac)
+checkpointer = construct_outputs(model, simulation, LES=true, simname=simname, frac=frac)
 #-----
 
 
@@ -275,34 +276,14 @@ println("\n", simulation,
         "\n",)
 
 @printf("---> Starting run!\n")
-run!(simulation)
+run!(simulation, pickup=true)
+
+using Oceananigans.OutputWriters: write_output!
+write_output!(checkpointer, model)
+pause
 #-----
 
 
-
-
-
-
-
-# Define LES model
-#+++++
-function swap_model(old_model::IncompressibleModel; kwargs...)
-    new_model_specification = Dict(property_name => getproperty(old_model, property_name) 
-                                   for property_name in propertynames(old_model))
-
-    for (property_name, property) in kwargs
-        new_model_specification[property_name] = property
-    end
-    
-    return IncompressibleModel(; new_model_specification...)
-end
-
-model = swap_model(model; 
-                   closure = closure_LES,
-                   advection = WENO5(),
-                   background_fields = bg_fields)
-println("\n", model, "\n")
-#-----
 
 
 # Define time-stepping and printing
@@ -314,7 +295,6 @@ wizard = TimeStepWizard(cfl=0.4,
 
 advCFL = oc.Diagnostics.AdvectiveCFL(wizard)
 difCFL = oc.Diagnostics.DiffusiveCFL(wizard)
-cfl(t) = t<10hours ? 0.1 : 0.18
 function progress(sim)
     wizard.cfl = cfl(sim.model.clock.time)
     msg = @printf("i: % 6d,    sim time: %10s,    wall time: %10s,    Δt: %10s,    diff CFL: %.2e,    adv CFL: %.2e\n",
@@ -329,32 +309,4 @@ function progress(sim)
 end
 #-----
 
-
-# REDEFINE Simulation!
-#++++
-simulation = Simulation(model, Δt=wizard, 
-                        stop_time=10*T_inertial,
-                        wall_time_limit=23.5hours,
-                        iteration_interval=5,
-                        progress=SingleLineProgressMessenger(LES=true, initial_wall_time_seconds=start_time),
-                        stop_iteration=Inf,)
-#-----
-
-
-# REDEFINE DIAGNOSTICS
-#++++
-checkpointer = construct_outputs(model, simulation, LES=true, simname=simname, frac=frac)
-#-----
-
-# Run the simulation!
-#+++++
-println("\n", simulation,
-        "\n",)
-
-@printf("---> Starting run!\n")
-run!(simulation, pickup=true)
-
-using Oceananigans.OutputWriters: write_output!
-write_output!(checkpointer, model)
-#-----
 
