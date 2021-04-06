@@ -54,6 +54,7 @@ simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7), jet)
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
 simname = @sprintf("PNN_%s", name)
+pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
 
@@ -209,7 +210,7 @@ end
 #++++
 import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
 import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
-closure_LES = SmagorinskyLilly(C=0.23)
+closure_LES = SmagorinskyLilly(C=0.13)
 #closure = AnisotropicMinimumDissipation()
 closure_cns = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 model_kwargs = (architecture = arch,
@@ -263,8 +264,7 @@ simulation = Simulation(model, Δt=wizard,
 # START FIRST DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-
-include("diagnostics.jl")
+pause
 construct_outputs(model, simulation, LES=false, simname=simname, frac=frac)
 #-----
 
@@ -307,9 +307,8 @@ println("\n", model, "\n")
 
 # Define time-stepping and printing
 #++++
-u_scale = abs(u₀)
-Δt = simulation.Δt.Δt
-wizard = TimeStepWizard(cfl=0.2,
+Δt = simulation.Δt.Δt/2
+wizard = TimeStepWizard(cfl=0.4,
                         diffusive_cfl=0.1,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 
@@ -335,7 +334,8 @@ end
 #++++
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        iteration_interval=10,
+                        wall_time_limit=23.5hours,
+                        iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=true, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 #-----
@@ -343,7 +343,7 @@ simulation = Simulation(model, Δt=wizard,
 
 # REDEFINE DIAGNOSTICS
 #++++
-construct_outputs(model, simulation, LES=true, simname=simname, frac=frac)
+checkpointer = construct_outputs(model, simulation, LES=true, simname=simname, frac=frac)
 #-----
 
 # Run the simulation!
@@ -352,6 +352,9 @@ println("\n", simulation,
         "\n",)
 
 @printf("---> Starting run!\n")
-run!(simulation)
+run!(simulation, pickup=true)
+
+using Oceananigans.OutputWriters: write_output!
+write_output!(checkpointer, model)
 #-----
 
