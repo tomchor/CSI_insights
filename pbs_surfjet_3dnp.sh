@@ -14,7 +14,7 @@
 # Clear the environment from any previously loaded modules
 module purge
 module load gnu
-module load cuda
+module load cuda/11.0.3
 
 #/glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
