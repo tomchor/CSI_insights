@@ -242,8 +242,8 @@ model.velocities.v.data.parent .-= v̄
 #++++
 u_scale = abs(u₀)
 Δt = 1/5*min(grid.Δy, grid.Δz) / u_scale
-wizard = TimeStepWizard(cfl=0.1,
-                        diffusive_cfl=0.4,
+wizard = TimeStepWizard(cfl=0.8,
+                        diffusive_cfl=0.5,
                         Δt=Δt, max_change=1.01, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 cfl_changer(model) = model.clock.time<10hours ? 0.1 : 0.18
 #----

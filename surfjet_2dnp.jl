@@ -258,7 +258,7 @@ end
 #++++
 u_scale = abs(u₀)
 Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.5,
+wizard = TimeStepWizard(cfl=0.8,
                         diffusive_cfl=0.8,
                         Δt=Δt, max_change=1.05, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
