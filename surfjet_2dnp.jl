@@ -270,7 +270,7 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
-                        wall_time_limit=23.5minutes,
+                        wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)

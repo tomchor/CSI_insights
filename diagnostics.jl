@@ -1,3 +1,4 @@
+using Printf
 using KernelAbstractions: @index, @kernel
 
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
@@ -14,6 +15,8 @@ using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy,
 
 
 #++++ KERNEL COMPUTED FIELDS
+
+#++++ Shear production terms
 @inline ψ²(i, j, k, grid, ψ) = @inbounds ψ[i, j, k]^2
 @inline ψ′²(i, j, k, grid, ψ, Ψ) = @inbounds (ψ[i, j, k] - Ψ[i, j, k])^2
 
@@ -75,7 +78,73 @@ end
 end
 #----
 
+#+++++ Mixing of buoyancy
+@inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
+@kernel function isotropic_buoyancy_mixing_ccc!(mixing, grid, b, κᵇ, N²₀)
+    i, j, k = @index(Global, NTuple)
+    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
+    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
+    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
 
+    @inbounds mixing[i, j, k] = κᵇ*(dbdx² + dbdy² + dbdz²)/N²₀
+end
+function IsotropicBuoyancyMixing(model, b, κᵇ, N²₀; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, isotropic_buoyancy_mixing_ccc!, model;
+                                   computed_dependencies=(b, κᵇ), parameters=N²₀, kwargs...)
+    else
+        throw(Exception)
+    end
+end
+
+
+@inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
+@kernel function anisotropic_buoyancy_mixing_ccc!(mixing, grid, b, params)
+    i, j, k = @index(Global, NTuple)
+    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
+    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
+    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
+
+    @inbounds mixing[i, j, k] = (params.κx*dbdx² + params.κy*dbdy² + params.κz*dbdz²)/params.N²₀
+end
+function AnisotropicBuoyancyMixing(model, b, κx, κy, κz, N²₀; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, anisotropic_buoyancy_mixing_ccc!, model;
+                                   computed_dependencies=(b,), 
+                                   parameters=(κx=κx, κy=κy, κz=κz, N²₀=N²₀), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+#-----
+
+
+#++++ Testing for dissipation
+@inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
+@kernel function anisotropic_viscous_dissipation2_ccc!(ϵ, grid, νx, νy, νz, u, v, w)
+    i, j, k = @index(Global, NTuple)
+
+    ddx² = ∂xᶜᵃᵃ(i, j, k, grid, ψ², u) + ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, v) + ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, w)
+
+    ddy² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, u) + ∂yᵃᶜᵃ(i, j, k, grid, ψ², v) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, w)
+
+    ddz² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, u) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, v) + ∂zᵃᵃᶜ(i, j, k, grid, ψ², w)
+
+    @inbounds ϵ[i, j, k] = νx[i,j,k]*ddx² + νy[i,j,k]*ddy² + νz[i,j,k]*ddz²
+end
+
+function AnisotropicViscousDissipation2(model, νx, νy, νz, u, v, w; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation2_ccc!, model;
+                                   computed_dependencies=(νx, νy, νz, u, v, w), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+#----
+
+
+#-----
 
 
 #++++ CREATE SNAPSHOT OUTPUTS
@@ -100,12 +169,14 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         νₑ = νz = model.diffusivities.νₑ
+        κₑ = κz = model.diffusivities.κₑ[:b]
     else
-        if :ν in fieldnames(typeof(model.closure))
+        if model.closure isa IsotropicDiffusivity
             νx = νy = νz = model.closure.ν
-        else
-            νx = νy = model.closure.νx
-            νz = model.closure.νz
+            κx = κy = κz = model.closure.κ[:b]
+        elseif model.closure isa AnisotropicDiffusivity
+            νx = model.closure.νx; νy = model.closure.νy; νz = model.closure.νz
+            κx = model.closure.κx[:b]; κy = model.closure.κy[:b]; κz = model.closure.κz[:b]
         end
     end
     #----
@@ -128,8 +199,11 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
+        χ = IsotropicBuoyancyMixing(model, b, κₑ, n2_inf, data=ccc_scratch.data)
     else
         ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
+        ε2 = AnisotropicViscousDissipation2(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
+        χ = AnisotropicBuoyancyMixing(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
     end
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
