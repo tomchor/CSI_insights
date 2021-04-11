@@ -80,17 +80,17 @@ end
 
 #+++++ Mixing of buoyancy
 @inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
-@kernel function isotropic_buoyancy_mixing_ccc!(mixing, grid, b, κᵇ, N²₀)
+@kernel function isotropic_buoyancy_mixing_rate_ccc!(mixing_rate, grid, b, κᵇ, N²₀)
     i, j, k = @index(Global, NTuple)
     dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
     dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
     dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
 
-    @inbounds mixing[i, j, k] = κᵇ*(dbdx² + dbdy² + dbdz²)/N²₀
+    @inbounds mixing_rate[i, j, k] = κᵇ[i,j,k]*(dbdx² + dbdy² + dbdz²)/N²₀
 end
-function IsotropicBuoyancyMixing(model, b, κᵇ, N²₀; location = (Center, Center, Center), kwargs...)
+function IsotropicBuoyancyMixingRate(model, b, κᵇ, N²₀; location = (Center, Center, Center), kwargs...)
     if location == (Center, Center, Center)
-        return KernelComputedField(Center, Center, Center, isotropic_buoyancy_mixing_ccc!, model;
+        return KernelComputedField(Center, Center, Center, isotropic_buoyancy_mixing_rate_ccc!, model;
                                    computed_dependencies=(b, κᵇ), parameters=N²₀, kwargs...)
     else
         throw(Exception)
@@ -99,17 +99,17 @@ end
 
 
 @inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
-@kernel function anisotropic_buoyancy_mixing_ccc!(mixing, grid, b, params)
+@kernel function anisotropic_buoyancy_mixing_rate_ccc!(mixing_rate, grid, b, params)
     i, j, k = @index(Global, NTuple)
     dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
     dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
     dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
 
-    @inbounds mixing[i, j, k] = (params.κx*dbdx² + params.κy*dbdy² + params.κz*dbdz²)/params.N²₀
+    @inbounds mixing_rate[i, j, k] = (params.κx*dbdx² + params.κy*dbdy² + params.κz*dbdz²)/params.N²₀
 end
-function AnisotropicBuoyancyMixing(model, b, κx, κy, κz, N²₀; location = (Center, Center, Center), kwargs...)
+function AnisotropicBuoyancyMixingRate(model, b, κx, κy, κz, N²₀; location = (Center, Center, Center), kwargs...)
     if location == (Center, Center, Center)
-        return KernelComputedField(Center, Center, Center, anisotropic_buoyancy_mixing_ccc!, model;
+        return KernelComputedField(Center, Center, Center, anisotropic_buoyancy_mixing_rate_ccc!, model;
                                    computed_dependencies=(b,), 
                                    parameters=(κx=κx, κy=κy, κz=κz, N²₀=N²₀), kwargs...)
     else
@@ -121,22 +121,39 @@ end
 
 #++++ Testing for dissipation
 @inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
-@kernel function anisotropic_viscous_dissipation2_ccc!(ϵ, grid, νx, νy, νz, u, v, w)
+@kernel function isotropic_pseudo_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, ν)
     i, j, k = @index(Global, NTuple)
 
     ddx² = ∂xᶜᵃᵃ(i, j, k, grid, ψ², u) + ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, v) + ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, w)
-
     ddy² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, u) + ∂yᵃᶜᵃ(i, j, k, grid, ψ², v) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, w)
-
     ddz² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, u) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, v) + ∂zᵃᵃᶜ(i, j, k, grid, ψ², w)
 
-    @inbounds ϵ[i, j, k] = νx[i,j,k]*ddx² + νy[i,j,k]*ddy² + νz[i,j,k]*ddz²
+    @inbounds ϵ[i, j, k] = ν[i,j,k] * (ddx² + ddy² + ddz²)
+end
+function IsotropicPseudoViscousDissipationRate(model, u, v, w, ν; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, isotropic_pseudo_viscous_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(u, v, w, ν), kwargs...)
+    else
+        throw(Exception)
+    end
 end
 
-function AnisotropicViscousDissipation2(model, νx, νy, νz, u, v, w; location = (Center, Center, Center), kwargs...)
+
+@kernel function anisotropic_pseudo_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, params)
+    i, j, k = @index(Global, NTuple)
+
+    ddx² = ∂xᶜᵃᵃ(i, j, k, grid, ψ², u) + ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, v) + ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, w)
+    ddy² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, u) + ∂yᵃᶜᵃ(i, j, k, grid, ψ², v) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, w)
+    ddz² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, u) + ℑyzᵃᶜᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, v) + ∂zᵃᵃᶜ(i, j, k, grid, ψ², w)
+
+    @inbounds ϵ[i, j, k] = params.νx*ddx² + params.νy*ddy² + params.νz*ddz²
+end
+function AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz; location = (Center, Center, Center), kwargs...)
     if location == (Center, Center, Center)
-        return KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation2_ccc!, model;
-                                   computed_dependencies=(νx, νy, νz, u, v, w), kwargs...)
+        return KernelComputedField(Center, Center, Center, anisotropic_pseudo_viscous_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(u, v, w), 
+                                   parameters=(νx=νx, νy=νy, νz=νz,), kwargs...)
     else
         throw(Exception)
     end
@@ -169,7 +186,7 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         νₑ = νz = model.diffusivities.νₑ
-        κₑ = κz = model.diffusivities.κₑ[:b]
+        κₑ = κz = model.diffusivities.νₑ # Assumes Pr=1
     else
         if model.closure isa IsotropicDiffusivity
             νx = νy = νz = model.closure.ν
@@ -199,11 +216,12 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
-        χ = IsotropicBuoyancyMixing(model, b, κₑ, n2_inf, data=ccc_scratch.data)
+        ε2 = IsotropicPseudoViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
+        χ = IsotropicBuoyancyMixingRate(model, b, κₑ, n2_inf, data=ccc_scratch.data)
     else
         ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
-        ε2 = AnisotropicViscousDissipation2(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
-        χ = AnisotropicBuoyancyMixing(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
+        ε2 = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        χ = AnisotropicBuoyancyMixingRate(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
     end
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
@@ -244,6 +262,8 @@ function get_outputs_tuple(model; LES=false)
                ω_x=ComputedField(ω_x, data=cff_scratch.data),
                tke=tke,
                ε=ε,
+               ε2=ε2,
+               χ=χ,
                PV_ver=PV_ver,
                PV_hor=PV_hor,
                SP_y=SP_y,
@@ -330,13 +350,26 @@ function construct_outputs(model, simulation;
     #-----
 
 
+    # AV2 outputs
+    #++++
+    outputs_avg = map(hor_window_average, outputs_snap)
+    simulation.output_writers[:av2_writer] =
+        NetCDFOutputWriter(model, outputs_avg,
+                           filepath = @sprintf("data/av2.%s.nc", simname),
+                           schedule = AveragedTimeInterval(2minutes; window=1.99minutes, stride=4),
+                           mode = mode,
+                           global_attributes = global_attributes,
+                           array_type = Array{Float64},
+                          )
+    #-----
+
     # Checkpointer
     #+++++
     simulation.output_writers[:chk_writer] = checkpointer = 
                                              Checkpointer(model;
                                              dir="data/",
                                              prefix = @sprintf("chk.%s", simname),
-                                             schedule = TimeInterval(1T_inertial),
+                                             schedule = TimeInterval(18hours),
                                              force = true,
                                              cleanup = true,
                                              )
