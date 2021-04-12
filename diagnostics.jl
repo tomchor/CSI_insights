@@ -120,6 +120,61 @@ end
 
 
 #++++ Testing for dissipation
+@inline fψ_plus_gφ²(i, j, k, grid, f, ψ, g, φ) = @inbounds (f(i, j, k, grid, ψ) + g(i, j, k, grid, φ))^2
+@kernel function isotropic_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, ν)
+    i, j, k = @index(Global, NTuple)
+
+    Σˣˣ² = ∂xᶜᵃᵃ(i, j, k, grid, u)^2
+    Σʸʸ² = ∂yᵃᶜᵃ(i, j, k, grid, v)^2
+    Σᶻᶻ² = ∂zᵃᵃᶜ(i, j, k, grid, w)^2
+
+    Σˣʸ² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ_plus_gφ², ∂yᵃᶠᵃ, u, ∂xᶠᵃᵃ, v) / 4
+    Σˣᶻ² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, u, ∂xᶠᵃᵃ, w) / 4
+    Σʸᶻ² = ℑyzᵃᶜᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, v, ∂yᵃᶠᵃ, w) / 4
+
+    @inbounds ϵ[i, j, k] = ν[i, j, k] * 2 * (Σˣˣ² + Σʸʸ² + Σᶻᶻ² + 2 * (Σˣʸ² + Σˣᶻ² + Σʸᶻ²))
+end
+function IsotropicViscousDissipationRate(model, u, v, w, ν; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(u, v, w, ν), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+
+
+
+@kernel function anisotropic_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, params)
+    i, j, k = @index(Global, NTuple)
+    νx=params.νx; νy=params.νy; νz=params.νz; 
+
+    Σˣˣ² = νx * ∂xᶜᵃᵃ(i, j, k, grid, u)^2
+    Σʸʸ² = νy * ∂yᵃᶜᵃ(i, j, k, grid, v)^2
+    Σᶻᶻ² = νz * ∂zᵃᵃᶜ(i, j, k, grid, w)^2
+
+    Σˣʸ² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ_plus_gφ², ∂yᵃᶠᵃ, u, ∂xᶠᵃᵃ, v) / 4
+    Σˣᶻ² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, u, ∂xᶠᵃᵃ, w) / 4
+    Σʸᶻ² = ℑyzᵃᶜᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, v, ∂yᵃᶠᵃ, w) / 4
+
+    diagonal = params.νx*Σˣˣ² + params.νy*Σʸʸ² + params.νz*Σᶻᶻ²
+    offdiagonal = (params.νx + params.νy) * Σˣʸ² + 
+                  (params.νx + params.νz) * Σˣᶻ² + 
+                  (params.νy + params.νz) * Σʸᶻ²
+    @inbounds ϵ[i, j, k] = 2 * (diagonal + offdiagonal)
+end
+function AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, anisotropic_viscous_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(u, v, w), 
+                                   parameters=(νx=νx, νy=νy, νz=νz), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+
+
+
 @inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
 @kernel function isotropic_pseudo_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, ν)
     i, j, k = @index(Global, NTuple)
@@ -217,10 +272,15 @@ function get_outputs_tuple(model; LES=false)
     if LES
         ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
         ε2 = IsotropicPseudoViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
+        ε3 = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
+        ε4 = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(u, v, w, νₑ,))
         χ = IsotropicBuoyancyMixingRate(model, b, κₑ, n2_inf, data=ccc_scratch.data)
     else
         ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
         ε2 = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        ε3 = AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        ε4 = IsotropicViscousDissipationRate(model, u, v, w, νz, data=ccc_scratch.data)
         χ = AnisotropicBuoyancyMixingRate(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
     end
 
@@ -263,6 +323,8 @@ function get_outputs_tuple(model; LES=false)
                tke=tke,
                ε=ε,
                ε2=ε2,
+               ε3=ε3,
+               ε4=ε4,
                χ=χ,
                PV_ver=PV_ver,
                PV_hor=PV_hor,
