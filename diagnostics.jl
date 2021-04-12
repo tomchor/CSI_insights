@@ -361,6 +361,7 @@ function construct_outputs(model, simulation;
     
     # Output (high def) SNAPSHOTS
     #++++
+    @info "Setting up out writer"
     outputs_snap = get_outputs_tuple(model, LES=LES)
     simulation.output_writers[:out_writer] =
         NetCDFOutputWriter(model, outputs_snap,
@@ -375,6 +376,7 @@ function construct_outputs(model, simulation;
     
     # Video (low def) SNAPSHOTS
     #++++
+    @info "Setting up vid writer"
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
     outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
@@ -393,6 +395,7 @@ function construct_outputs(model, simulation;
     
     # AVG outputs
     #++++
+    @info "Setting up avg writer"
     x_average(F) = AveragedField(F, dims=(1,))
     xz_average(F) = AveragedField(F, dims=(1,3))
     
@@ -414,6 +417,7 @@ function construct_outputs(model, simulation;
 
     # AV2 outputs
     #++++
+    @info "Setting up av2 writer"
     outputs_avg = map(hor_window_average, outputs_snap)
     simulation.output_writers[:av2_writer] =
         NetCDFOutputWriter(model, outputs_avg,
@@ -427,6 +431,7 @@ function construct_outputs(model, simulation;
 
     # Checkpointer
     #+++++
+    @info "Setting up chk writer"
     simulation.output_writers[:chk_writer] = checkpointer = 
                                              Checkpointer(model;
                                              dir="data/",
