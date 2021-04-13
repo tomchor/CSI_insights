@@ -595,9 +595,9 @@ version = "0.53.2"
 
 [[Oceanostics]]
 deps = ["KernelAbstractions", "Oceananigans", "Printf", "Test"]
-git-tree-sha1 = "760bdc15c68a7c0d9b18b949f73c043de5124e6e"
+git-tree-sha1 = "33039fe92362dc6ae4c20745f21b7f8ad4a8404e"
 uuid = "d0ccf422-c8fb-49b5-a76d-74acdde946ac"
-version = "0.2.1"
+version = "0.3.0"
 
 [[OffsetArrays]]
 deps = ["Adapt"]
