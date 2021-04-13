@@ -270,17 +270,14 @@ function get_outputs_tuple(model; LES=false)
     tke = KineticEnergy(model, u, v, w, data=ccc_scratch.data)
     
     if LES
-        ε = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
+        ε = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
         ε2 = IsotropicPseudoViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
-        ε3 = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
-        ε4 = KernelComputedField(Center, Center, Center, isotropic_viscous_dissipation_rate_ccc!, model;
-                                   computed_dependencies=(u, v, w, νₑ,))
+        ε3 = IsotropicViscousDissipation(model, νₑ, u, v, w, data=ccc_scratch.data)
         χ = IsotropicBuoyancyMixingRate(model, b, κₑ, n2_inf, data=ccc_scratch.data)
     else
-        ε = AnisotropicViscousDissipation(model, νx, νy, νz, u, v, w, data=ccc_scratch.data)
-        ε2 = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
-        ε3 = AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
-        ε4 = IsotropicViscousDissipationRate(model, u, v, w, νz, data=ccc_scratch.data)
+        ε = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        ε2 = AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        ε3 = IsotropicViscousDissipationRate(model, u, v, w, νz, data=ccc_scratch.data)
         χ = AnisotropicBuoyancyMixingRate(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
     end
 
@@ -324,7 +321,6 @@ function get_outputs_tuple(model; LES=false)
                ε=ε,
                ε2=ε2,
                ε3=ε3,
-               ε4=ε4,
                χ=χ,
                PV_ver=PV_ver,
                PV_hor=PV_hor,
