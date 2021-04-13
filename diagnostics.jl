@@ -145,6 +145,11 @@ end
 
 
 
+@inline fψ_plus_gφ(i, j, k, grid, f, ψ, g, φ) = @inbounds f(i, j, k, grid, ψ) + g(i, j, k, grid, φ)
+@inline νfψ_plus_κgφ(i, j, k, grid, ν, f, ψ, κ, g, φ) = @inbounds ν*f(i, j, k, grid, ψ) + κ*g(i, j, k, grid, φ)
+@inline function νfψ_plus_κgφ_times_fψ_plus_gφ(i, j, k, grid, ν, f, ψ, κ, g, φ)
+    @inbounds (ν*f(i, j, k, grid, ψ) + κ*g(i, j, k, grid, φ)) * (f(i, j, k, grid, ψ) + g(i, j, k, grid, φ))
+end
 @kernel function anisotropic_viscous_dissipation_rate_ccc!(ϵ, grid, u, v, w, params)
     i, j, k = @index(Global, NTuple)
     νx=params.νx; νy=params.νy; νz=params.νz; 
@@ -153,15 +158,13 @@ end
     Σʸʸ² = νy * ∂yᵃᶜᵃ(i, j, k, grid, v)^2
     Σᶻᶻ² = νz * ∂zᵃᵃᶜ(i, j, k, grid, w)^2
 
-    Σˣʸ² = ℑxyᶜᶜᵃ(i, j, k, grid, fψ_plus_gφ², ∂yᵃᶠᵃ, u, ∂xᶠᵃᵃ, v) / 4
-    Σˣᶻ² = ℑxzᶜᵃᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, u, ∂xᶠᵃᵃ, w) / 4
-    Σʸᶻ² = ℑyzᵃᶜᶜ(i, j, k, grid, fψ_plus_gφ², ∂zᵃᵃᶠ, v, ∂yᵃᶠᵃ, w) / 4
+    Σˣʸ² = (ℑxyᶜᶜᵃ(i, j, k, grid, νfψ_plus_κgφ, νy, ∂yᵃᶠᵃ, u, νx, ∂xᶠᵃᵃ, v) * ℑxyᶜᶜᵃ(i, j, k, grid, fψ_plus_gφ, ∂yᵃᶠᵃ, u, ∂xᶠᵃᵃ, v)) / 4
+    Σˣᶻ² = (ℑxzᶜᵃᶜ(i, j, k, grid, νfψ_plus_κgφ, νz, ∂zᵃᵃᶠ, u, νx, ∂xᶠᵃᵃ, w) * ℑxzᶜᵃᶜ(i, j, k, grid, fψ_plus_gφ, ∂zᵃᵃᶠ, u, ∂xᶠᵃᵃ, w)) / 4
+    Σʸᶻ² = (ℑyzᵃᶜᶜ(i, j, k, grid, νfψ_plus_κgφ, νz, ∂zᵃᵃᶠ, v, νy, ∂yᵃᶠᵃ, w) * ℑyzᵃᶜᶜ(i, j, k, grid, fψ_plus_gφ, ∂zᵃᵃᶠ, v, ∂yᵃᶠᵃ, w)) / 4
 
-    diagonal = params.νx*Σˣˣ² + params.νy*Σʸʸ² + params.νz*Σᶻᶻ²
-    offdiagonal = (params.νx + params.νy) * Σˣʸ² + 
-                  (params.νx + params.νz) * Σˣᶻ² + 
-                  (params.νy + params.νz) * Σʸᶻ²
-    @inbounds ϵ[i, j, k] = 2 * (diagonal + offdiagonal)
+    diagonal = Σˣˣ² + Σʸʸ² + Σᶻᶻ²
+    offdiagonal = Σˣʸ² + Σˣᶻ² + Σʸᶻ²
+    @inbounds ϵ[i, j, k] = 2 * (diagonal + 2*offdiagonal)
 end
 function AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz; location = (Center, Center, Center), kwargs...)
     if location == (Center, Center, Center)
@@ -413,16 +416,16 @@ function construct_outputs(model, simulation;
 
     # AV2 outputs
     #++++
-    @info "Setting up av2 writer"
-    outputs_avg = map(hor_window_average, outputs_snap)
-    simulation.output_writers[:av2_writer] =
-        NetCDFOutputWriter(model, outputs_avg,
-                           filepath = @sprintf("data/av2.%s.nc", simname),
-                           schedule = AveragedTimeInterval(2minutes; window=1.99minutes, stride=4),
-                           mode = mode,
-                           global_attributes = global_attributes,
-                           array_type = Array{Float64},
-                          )
+#    @info "Setting up av2 writer"
+#    outputs_avg = map(hor_window_average, outputs_snap)
+#    simulation.output_writers[:av2_writer] =
+#        NetCDFOutputWriter(model, outputs_avg,
+#                           filepath = @sprintf("data/av2.%s.nc", simname),
+#                           schedule = AveragedTimeInterval(2minutes; window=1.99minutes, stride=4),
+#                           mode = mode,
+#                           global_attributes = global_attributes,
+#                           array_type = Array{Float64},
+#                          )
     #-----
 
     # Checkpointer
