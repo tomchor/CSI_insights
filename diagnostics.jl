@@ -8,7 +8,7 @@ using Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceananigans.Grids: Center, Face
 
-using Oceanostics.FlowDiagnostics: IsotropicBuoyancyMixingRate, AnisotropicBuoyancyMixingRate
+#using Oceanostics.FlowDiagnostics: IsotropicBuoyancyMixingRate, AnisotropicBuoyancyMixingRate
 using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
                                                IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
                                                AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
@@ -47,7 +47,6 @@ end
 #-----
 
 
-
 #++++ PV components
 @kernel function ertel_potential_vorticity_vertical_fff!(PV, grid, u, v, b, f₀)
     i, j, k = @index(Global, NTuple)
@@ -78,6 +77,46 @@ end
     @inbounds PV[i, j, k] = pv_x + pv_y
 end
 #----
+
+#+++++ Mixing of buoyancy
+@inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
+
+@kernel function isotropic_buoyancy_variance_dissipation_rate_ccc!(mixing_rate, grid, b, κᵇ)
+    i, j, k = @index(Global, NTuple)
+    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
+    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
+    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
+
+    @inbounds mixing_rate[i, j, k] = 2 * κᵇ[i,j,k] * (dbdx² + dbdy² + dbdz²)
+end
+function IsotropicBuoyancyVarianceDissipationRate(model, b, κᵇ; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, isotropic_buoyancy_variance_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(b, κᵇ), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+
+
+@kernel function anisotropic_buoyancy_variance_dissipation_rate_ccc!(mixing_rate, grid, b, params)
+    i, j, k = @index(Global, NTuple)
+    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
+    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
+    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
+
+    @inbounds mixing_rate[i, j, k] = 2 * (params.κx*dbdx² + params.κy*dbdy² + params.κz*dbdz²)
+end
+function AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz; location = (Center, Center, Center), kwargs...)
+    if location == (Center, Center, Center)
+        return KernelComputedField(Center, Center, Center, anisotropic_buoyancy_variance_dissipation_rate_ccc!, model;
+                                   computed_dependencies=(b,), 
+                                   parameters=(κx=κx, κy=κy, κz=κz), kwargs...)
+    else
+        throw(Exception)
+    end
+end
+#-----
 
 #-----
 
@@ -135,11 +174,11 @@ function get_outputs_tuple(model; LES=false)
     if LES
         ε = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
         ε2 = IsotropicPseudoViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
-        χ = IsotropicBuoyancyMixingRate(model, b, κₑ, n2_inf, data=ccc_scratch.data)
+        χ = IsotropicBuoyancyVarianceDissipationRate(model, b, κₑ, data=ccc_scratch.data)
     else
         ε = AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
         ε2 = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
-        χ = AnisotropicBuoyancyMixingRate(model, b, κx, κy, κz, n2_inf, data=ccc_scratch.data)
+        χ = AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz, data=ccc_scratch.data)
     end
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
@@ -240,7 +279,7 @@ function construct_outputs(model, simulation;
     simulation.output_writers[:vid_writer] =
         NetCDFOutputWriter(model, outputs_vid,
                            filepath = @sprintf("data/vid.%s.nc", simname),
-                           schedule = TimeInterval(90minutes),
+                           schedule = TimeInterval(60minutes),
                            mode = mode,
                            global_attributes = global_attributes,
                            array_type = Array{Float32},
