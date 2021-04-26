@@ -17,7 +17,7 @@ function parse_command_line_arguments()
 
         "--factor"
             help = "Factor to divide Nh and Nz for"
-            default = 64
+            default = 16
             arg_type = Int
 
         "--arch"
@@ -52,9 +52,10 @@ as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(SurfaceJetSimulations(), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
-simname = @sprintf("TEST_%s", name)
+simname = @sprintf("FNN_TEST3%s", name)
+sponge_frac = 1/16
 #-----
 
 
@@ -105,24 +106,24 @@ const z_0 = z₀
 const z_c = -40
 const z_m = z_c - n2_pyc/n2_inf*(z_c+Hz)
 const f_0 = f0
-fy(ψ) = exp(-ψ^2)
-intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
-umask(Y, Z) = Z * fy(Y)
-bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
+@inline fy(ψ) = exp(-ψ^2)
+@inline intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
+@inline umask(Y, Z) = Z * fy(Y)
+@inline bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
 
 u_g(x, y, z, t) = +u_0 * umask((y-y_0)/sig_y, ((z-z_0)/sig_z +1))
-background_strat(z) = ifelse(z < z_c, 
+@inline background_strat(z) = ifelse(z < z_c, 
                              n2_pyc * (z+Hz),
                              n2_inf * (z-z_m))
 b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + background_strat(z)
-dudz_g(x, y, z, t) = +u_0 * (1/sig_z) * fy((y-y_0)/sig_y)
+@inline dudz_g(x, y, z, t) = +u_0 * (1/sig_z) * fy((y-y_0)/sig_y)
 #-----
 
 # Setting BCs
 #++++
 if as_background
-    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
-    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
+    surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
+    bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
     U_top_bc = GradientBoundaryCondition(surface_grad)
     U_bot_bc = GradientBoundaryCondition(bottom_grad)
     B_bc = GradientBoundaryCondition(0)
@@ -137,8 +138,8 @@ ubc = UVelocityBoundaryConditions(grid,
                                   bottom = U_bot_bc,
                                   )
 vbc = VVelocityBoundaryConditions(grid, 
-                                  top = BoundaryCondition(Flux, 0),
-                                  bottom = BoundaryCondition(Flux, 0),
+                                  top = FluxBoundaryCondition(0),
+                                  bottom = FluxBoundaryCondition(0),
                                   )
 wbc = WVelocityBoundaryConditions(grid, 
                                   )
@@ -154,35 +155,34 @@ bbc = TracerBoundaryConditions(grid,
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
 @inline mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
-const Hy = grid.Ly
-const frac = 8
+const frac = sponge_frac
 
-@inline function bottom_mask(x, y, z)
-    z₁ = -Hz; z₀ = z₁ + Hz/frac
+function bottom_mask(x, y, z)
+    z₁ = -Hz; z₀ = z₁ + Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
-@inline function top_mask(x, y, z)
-    z₁ = +Hz; z₀ = z₁ - Hz/frac
+function top_mask(x, y, z)
+    z₁ = +Hz; z₀ = z₁ - Hz*frac
     return mask2nd((z - z₀)/(z₁ - z₀))
 end
-@inline function north_mask(x, y, z)
-    y₁ = Hy; y₀ = y₁ - Hy/frac
+function north_mask(x, y, z)
+    y₁ = Hy; y₀ = y₁ - Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-@inline function south_mask(x, y, z)
-    y₁ = 0; y₀ = y₁ + Hy/frac
+function south_mask(x, y, z)
+    y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
 
-full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
+full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)
 if as_background
     full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
     full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
     full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
 
@@ -255,13 +255,13 @@ end
 #-----
 
 
-# Define time-stepping and printing
+# Define time-stepping
 #++++
 u_scale = abs(u₀)
-Δt = 0.1 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.4,
-                        diffusive_cfl=0.5,
-                        Δt=Δt, max_change=1.1, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
+Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
+wizard = TimeStepWizard(cfl=0.8,
+                        diffusive_cfl=0.8,
+                        Δt=Δt, max_change=1.05, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
 # Finally define Simulation!
@@ -271,11 +271,10 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=10*T_inertial,
+                        wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
-                        wall_time_limit=5minutes,
-                        stop_iteration=Inf,
-                        )
+                        stop_iteration=Inf,)
 #-----
 
 
@@ -283,7 +282,7 @@ simulation = Simulation(model, Δt=wizard,
 # DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-checkpointer = construct_outputs(model, simulation, LES=LES)
+checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
 #-----
 
 
