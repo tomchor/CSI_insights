@@ -76,7 +76,6 @@ println("\n", global_attributes, "\n")
 #-----
 
 
-
 # Set GRID
 #++++  GRID
 Nx = 1
@@ -121,8 +120,8 @@ b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + backgr
 # Setting BCs
 #++++
 if as_background
-    surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
-    bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
+    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
+    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
     U_top_bc = GradientBoundaryCondition(surface_grad)
     U_bot_bc = GradientBoundaryCondition(bottom_grad)
     B_bc = GradientBoundaryCondition(0)
@@ -176,15 +175,14 @@ end
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
 if as_background
     full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
     full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
     full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
-
 
 
 # Set up ICs and/or Background Fields
@@ -192,8 +190,8 @@ end
 kick = 1e-6
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
-    u_ic(x, y, z) = + kick*randn()
-    v_ic(x, y, z) = + kick*randn()
+    u_ic(x, y, z) = 0 #+ kick*randn()
+    v_ic(x, y, z) = 0 #+ kick*randn()
     b_ic(x, y, z) = + 1e-8*randn()
 
     bg_fields = (u=u_g, b=b_g,)
@@ -215,7 +213,6 @@ if LES
     closure = SmagorinskyLilly(C=0.23)
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
-#    closure = IsotropicDiffusivity(ν=1e-5, κ=1e-5)
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
 model = IncompressibleModel(architecture = arch,
@@ -263,6 +260,7 @@ wizard = TimeStepWizard(cfl=0.8,
                         Δt=Δt, max_change=1.05, min_change=0.01, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
+
 # Finally define Simulation!
 #++++
 include("diagnostics.jl")
@@ -274,8 +272,8 @@ simulation = Simulation(model, Δt=wizard,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
+println("\n", simulation, "\n")
 #-----
-
 
 
 # DIAGNOSTICS
