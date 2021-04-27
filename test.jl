@@ -67,7 +67,7 @@ else
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
-simname = "$(prefix)_TEST3$name"
+simname = "$(prefix)_TEST4$name"
 sponge_frac = 1/16
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
@@ -234,7 +234,8 @@ if LES
     closure = SmagorinskyLilly(C=0.13)
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
-    closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
+    #closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
+    closure = IsotropicDiffusivity(ν=2*νz, κ=2*νz)
 end
 model_kwargs = (architecture = arch,
                 grid = grid,
@@ -244,7 +245,7 @@ model_kwargs = (architecture = arch,
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                forcing = forcing,
+#                forcing = forcing,
                 background_fields = bg_fields,
                 )
 model = IncompressibleModel(; model_kwargs..., closure=closure)
