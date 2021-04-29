@@ -67,7 +67,7 @@ else
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
 
-simname = "$(prefix)_TEST4$name"
+simname = "$(prefix)_TEST2$name"
 sponge_frac = 1/16
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
