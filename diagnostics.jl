@@ -296,6 +296,7 @@ function construct_outputs(model, simulation;
     
     slicer = FieldSlicer(j=Int(grid.Ny*frac):Int(grid.Ny*(1-1*frac)), with_halos=false)
     hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2), field_slicer=slicer)
+    #hor_mixed_average(F) = WindowedSpatialAverage(AveragedField(F; dims=1); dims=(1, 2), field_slicer=slicer)
     
     outputs_avg = map(hor_window_average, outputs_snap)
     
