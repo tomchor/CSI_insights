@@ -1,7 +1,6 @@
 using Printf
 using KernelAbstractions: @index, @kernel
 using Statistics: mean
-using CUDA: has_cuda
 
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Units
@@ -259,7 +258,7 @@ function construct_outputs(model, simulation;
 
     #++++ Define sorting b function
     function flattenedsort(A, dim_order::Union{Tuple, AbstractVector})
-        return reshape(sort(permutedims(A, dim_order)[:]), (grid.Nx, grid.Ny, grid.Nz))
+        return reshape(sort(Array(permutedims(A, dim_order)[:])), (grid.Nx, grid.Ny, grid.Nz))
     end
 
     function sort_b(model; average=false)
@@ -296,7 +295,7 @@ function construct_outputs(model, simulation;
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
     outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
-    if !has_cuda() outputs_vid = merge(outputs_vid, (sorted_b=sort_b,)) end
+    outputs_vid = merge(outputs_vid, (sorted_b=sort_b,))
     dims = Dict("sorted_b" => ("xC", "yC", "zC"),)
     
     simulation.output_writers[:vid_writer] =
@@ -323,7 +322,7 @@ function construct_outputs(model, simulation;
     #hor_mixed_average(F) = WindowedSpatialAverage(AveragedField(F; dims=1); dims=(1, 2), field_slicer=slicer)
     
     outputs_avg = map(hor_window_average, outputs_snap)
-    if !has_cuda() outputs_avg = merge(outputs_avg, (sorted_b=mean_sort_b,)) end
+    outputs_avg = merge(outputs_avg, (sorted_b=mean_sort_b,))
     dims = Dict("sorted_b" => ("zC",),)
     
     simulation.output_writers[:avg_writer] =
