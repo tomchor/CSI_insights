@@ -1,5 +1,7 @@
 using Printf
 using KernelAbstractions: @index, @kernel
+using Statistics: mean
+using CUDA: has_cuda
 
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Units
@@ -163,6 +165,7 @@ function get_outputs_tuple(model; LES=false)
     fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
     #----
 
+
     # Start calculation of snapshot variables
     #++++
     dbdz = @at (Center, Center, Face) ∂z(b_tot)
@@ -253,6 +256,24 @@ function construct_outputs(model, simulation;
         @info "No checkpoint for $simname found. Setting mode to clobber."
         mode = "c"
     end
+
+    #++++ Define sorting b function
+    function flattenedsort(A, dim_order::Union{Tuple, AbstractVector})
+        return reshape(sort(permutedims(A, dim_order)[:]), (grid.Nx, grid.Ny, grid.Nz))
+    end
+
+    function sort_b(model; average=false)
+        b = model.tracers.b
+        sorted_B = flattenedsort(interior(b), [3,2,1])
+        if !average
+            return sorted_B
+        else
+            return dropdims(mean(sorted_B, dims=(1,2)), dims=(1,2))
+        end
+    end
+    mean_sort_b = (mod)->sort_b(mod; average=true)
+    #-----
+
     
     # Output (high def) SNAPSHOTS
     #++++
@@ -275,6 +296,8 @@ function construct_outputs(model, simulation;
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
     outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
+    if !has_cuda() outputs_vid = merge(outputs_vid, (sorted_b=sort_b,)) end
+    dims = Dict("sorted_b" => ("xC", "yC", "zC"),)
     
     simulation.output_writers[:vid_writer] =
         NetCDFOutputWriter(model, outputs_vid,
@@ -282,6 +305,7 @@ function construct_outputs(model, simulation;
                            schedule = TimeInterval(60minutes),
                            mode = mode,
                            global_attributes = global_attributes,
+                           dimensions = dims,
                            array_type = Array{Float32},
                            field_slicer = FieldSlicer(i=1, with_halos=false),
                            )
@@ -299,6 +323,8 @@ function construct_outputs(model, simulation;
     #hor_mixed_average(F) = WindowedSpatialAverage(AveragedField(F; dims=1); dims=(1, 2), field_slicer=slicer)
     
     outputs_avg = map(hor_window_average, outputs_snap)
+    if !has_cuda() outputs_avg = merge(outputs_avg, (sorted_b=mean_sort_b,)) end
+    dims = Dict("sorted_b" => ("zC",),)
     
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
@@ -306,6 +332,7 @@ function construct_outputs(model, simulation;
                            schedule = TimeInterval(2minutes),
                            mode = mode,
                            global_attributes = global_attributes,
+                           dimensions = dims,
                            array_type = Array{Float64},
                           )
     #-----

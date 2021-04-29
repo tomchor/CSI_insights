@@ -87,7 +87,7 @@ function flattenedsort(A, dim_order::Union{Tuple, AbstractVector})
     return reshape(sort(permutedims(A, dim_order)[:]), (grid.Nx, grid.Ny, grid.Nz))
 end
 
-function sorted_b_output(model; average=false)
+function sort_b(model; average=false)
     b = model.tracers.b
     sorted_B = flattenedsort(interior(b), [3,2,1])
     if !average
@@ -96,7 +96,7 @@ function sorted_b_output(model; average=false)
         return dropdims(mean(sorted_B, dims=(1,2)), dims=(1,2))
     end
 end
-mean_sorted_b_output = (mod)->sorted_b_output(mod; average=true)
+mean_sorted_b_output = (mod)->sort_b(mod; average=true)
 #----
 
 
@@ -107,11 +107,10 @@ b = model.tracers.b
 
 outputs = (b=b,
            mean_b=AveragedField(b, dims=(1,2)), 
-           sorted_b=sorted_b_output,
+           sorted_b=sort_b,
            mean_sorted_b=mean_sorted_b_output,
           )
 dims = Dict("sorted_b" => ("xC", "yC", "zC"), 
-            "profile" => ("zC",),
             "mean_sorted_b" => ("zC",),
             );
 #----
