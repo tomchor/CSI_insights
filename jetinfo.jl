@@ -8,7 +8,7 @@ using Parameters
     Lz = 500 # m
     νh = 1.5e-2
     νz = 8e-4
-    sponge_frac = 1/8
+    sponge_frac = 1/16
     JD15exp = (name = "JD15exp",
                f0 = f0,
                u₀ = 0.35e0,
@@ -57,7 +57,7 @@ end
     N2_pyc = 1e-6 # 1/s²
     νh=8e-3
     νz=5e-4
-    sponge_frac = 1/8
+    sponge_frac = 1/16
 
     CIjet1 = (name = "CIsurfjet1",
               f0 = f0,
