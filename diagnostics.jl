@@ -295,8 +295,8 @@ function construct_outputs(model, simulation;
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
     outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
-    outputs_vid = merge(outputs_vid, (sorted_b=sort_b,))
-    dims = Dict("sorted_b" => ("xC", "yC", "zC"),)
+    if ndims==2 outputs_vid = merge(outputs_vid, (b_sorted=sort_b,)) end
+    dims = Dict("b_sorted" => ("xC", "yC", "zC"),)
     
     simulation.output_writers[:vid_writer] =
         NetCDFOutputWriter(model, outputs_vid,
@@ -322,8 +322,8 @@ function construct_outputs(model, simulation;
     #hor_mixed_average(F) = WindowedSpatialAverage(AveragedField(F; dims=1); dims=(1, 2), field_slicer=slicer)
     
     outputs_avg = map(hor_window_average, outputs_snap)
-    outputs_avg = merge(outputs_avg, (sorted_b=mean_sort_b,))
-    dims = Dict("sorted_b" => ("zC",),)
+    outputs_avg = merge(outputs_avg, (b_sorted=mean_sort_b,))
+    dims = Dict("b_sorted" => ("zC",),)
     
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
