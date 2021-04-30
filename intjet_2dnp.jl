@@ -52,24 +52,9 @@ as_background=false
 include("jetinfo.jl")
 
 simulation_nml = getproperty(InteriorJetSimulations(), jet)
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
 simname = @sprintf("FNN_%s", name)
-#-----
-
-
-# Calculate secondary parameters
-#++++
-b₀ = u₀ * f0
-ρ₀ = 1027
-T_inertial = 2*π/f0
-
-global_attributes = merge(simulation_nml,
-                          (LES=Int(LES),
-                          u_0=u₀, y_0=y₀, z_0=z₀,
-                          b0 = b₀, T_inertial = T_inertial,),
-                         )
-println("\n", global_attributes, "\n")
 #-----
 
 # Set GRID
@@ -83,6 +68,22 @@ grid = RegularRectilinearGrid(size=(Nx, Ny÷factor, Nz÷factor),
                             z=(-Lz, 0), 
                             topology=topology)
 println("\n", grid, "\n")
+#-----
+
+
+# Calculate secondary parameters
+#++++
+b₀ = u₀ * f0
+ρ₀ = 1027
+T_inertial = 2*π/f0
+νh = νz * (grid.Δy / grid.Δz)^(4/3)
+
+global_attributes = merge(simulation_nml,
+                          (LES=Int(LES),
+                          u_0=u₀, y_0=y₀, z_0=z₀,
+                          b0 = b₀, T_inertial = T_inertial, νh=νh),
+                         )
+println("\n", global_attributes, "\n")
 #-----
 
 

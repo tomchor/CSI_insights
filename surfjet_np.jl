@@ -1,3 +1,5 @@
+using Pkg
+Pkg.instantiate()
 using ArgParse
 using Printf
 using Oceananigans; oc = Oceananigans
@@ -67,30 +69,11 @@ else
     prefix = "FNN"
     LES = false
 end
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
 simname = "$(prefix)_$name"
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
-
-
-# Calculate secondary parameters
-#++++
-b₀ = u₀ * f0
-ρ₀ = 1027
-T_inertial = 2*π/f0
-y_r = y₀ + √2/4 * σy
-z_r = 0
-Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
-Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
-
-secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
-                         (;y_r, z_r, Ro_r, Ri_r, T_inertial))
-
-global_attributes = merge(simulation_nml, secondary_params)
-println("\n", global_attributes, "\n")
-#-----
-
 
 # Set GRID
 #++++  GRID
@@ -110,6 +93,26 @@ grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
                               topology=topology)
 println("\n", grid, "\n")
 #-----
+
+
+# Calculate secondary parameters
+#++++
+b₀ = u₀ * f0
+ρ₀ = 1027
+T_inertial = 2*π/f0
+y_r = y₀ + √2/4 * σy
+z_r = 0
+Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
+Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
+νh = νz * (grid.Δy / grid.Δz)^(4/3)
+
+secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+                         (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
+
+global_attributes = merge(simulation_nml, secondary_params)
+println("\n", global_attributes, "\n")
+#-----
+
 
 
 # Set up Geostrophic flow
@@ -196,13 +199,13 @@ end
 
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
 if as_background
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
+    full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
 else
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
-    full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
+    full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
+    full_sponge_u = Relaxation(rate=1/10minutes, mask=full_mask, target=u_g)
+    full_sponge_b = Relaxation(rate=1/10minutes, mask=full_mask, target=b_g)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
 end
 #-----
 

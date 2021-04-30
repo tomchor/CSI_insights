@@ -6,7 +6,6 @@ using Parameters
     Nz = 2^11
     Ly = 15_000 # m
     Lz = 500 # m
-    νh = 1.5e-2
     νz = 8e-4
     sponge_frac = 1/16
     JD15exp = (name = "JD15exp",
@@ -23,7 +22,6 @@ using Parameters
                y₀ = Ly/2,
                z₀ = -Lz/2,
                νz = νz,
-               νh = νh,
                sponge_frac = sponge_frac,
                )
 
@@ -41,7 +39,6 @@ using Parameters
                y₀ = Ly/3, # m
                z₀ = -Lz/2, # m
                νz = νz,
-               νh = νh,
                sponge_frac = sponge_frac,
                )
 
@@ -55,7 +52,6 @@ end
     Ly = 15_000 # m
     Lz = 80 # m
     N2_pyc = 1e-6 # 1/s²
-    νh=8e-3
     νz=5e-4
     sponge_frac = 1/16
 
@@ -72,7 +68,6 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-5,
-              νh = νh,
               νz = νz,
               sponge_frac = sponge_frac,
              )
@@ -90,7 +85,6 @@ end
               y₀ = +Ly/2, # m
               z₀ = 0, # m
               N2_pyc = 1e-5,
-              νh = νh,
               νz = νz,
               sponge_frac = sponge_frac,
               )
@@ -108,7 +102,6 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
-              νh = νh,
               νz = νz,
               sponge_frac = sponge_frac,
              )
@@ -127,8 +120,7 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
-              νh = νh,
-              νz = νz,
+              νz = 8e-4,
               sponge_frac = sponge_frac,
              )
 
@@ -147,7 +139,6 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 1e-6,
-              νh = νh,
               νz = νz,
               sponge_frac = sponge_frac,
              )
@@ -167,8 +158,7 @@ end
               y₀ = +Ly/2,
               z₀ = 0,
               N2_pyc = 2.5e-7,
-              νh = νh,
-              νz = νz,
+              νz = 1e-3,
               sponge_frac = sponge_frac,
               )
 
@@ -187,7 +177,6 @@ end
                 y₀ = +Ly/2,
                 z₀ = 0,
                 N2_pyc = 1e-5,
-                νh = νh,
                 νz = νz,
                 sponge_frac = sponge_frac,
                 )

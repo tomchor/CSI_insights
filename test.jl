@@ -65,31 +65,12 @@ else
     prefix = "FNN"
     LES = false
 end
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νh, νz, sponge_frac = simulation_nml
+@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
 simname = "$(prefix)_TEST2$name"
 sponge_frac = 1/16
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
-
-
-# Calculate secondary parameters
-#++++
-b₀ = u₀ * f0
-ρ₀ = 1027
-T_inertial = 2*π/f0
-y_r = y₀ + √2/4 * σy
-z_r = 0
-Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
-Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
-
-secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
-                         (;y_r, z_r, Ro_r, Ri_r, T_inertial))
-
-global_attributes = merge(simulation_nml, secondary_params)
-println("\n", global_attributes, "\n")
-#-----
-
 
 # Set GRID
 #++++  GRID
@@ -108,6 +89,25 @@ grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
                               z=(-Lz, 0), 
                               topology=topology)
 println("\n", grid, "\n")
+#-----
+
+
+# Calculate secondary parameters
+#++++
+b₀ = u₀ * f0
+ρ₀ = 1027
+T_inertial = 2*π/f0
+y_r = y₀ + √2/4 * σy
+z_r = 0
+Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
+Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
+νh = νz * (grid.Δy / grid.Δz)^(4/3)
+
+secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+                         (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
+
+global_attributes = merge(simulation_nml, secondary_params)
+println("\n", global_attributes, "\n")
 #-----
 
 
