@@ -196,16 +196,16 @@ function south_mask(x, y, z)
     y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
+
+rate = 1/10minutes
+full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
-    full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
-    full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
-    full_sponge_u = Relaxation(rate=1/10minutes, mask=full_mask, target=u_g)
-    full_sponge_b = Relaxation(rate=1/10minutes, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
+    full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
+    full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
+    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
 
@@ -235,7 +235,7 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
-    closure = SmagorinskyLilly(C=0.13)
+    closure = SmagorinskyLilly(C=0.16)
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
