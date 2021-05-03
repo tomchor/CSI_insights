@@ -2,7 +2,7 @@ using Pkg
 Pkg.instantiate()
 using ArgParse
 using Printf
-using Oceananigans; oc = Oceananigans
+using Oceananigans
 using Oceananigans.Utils
 using Oceananigans.Units
 using Oceananigans.Advection: UpwindBiasedThirdOrder, WENO5
@@ -200,7 +200,7 @@ end
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
 if as_background
     full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_b)
+    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0, b=full_sponge_0)
 else
     full_sponge_0 = Relaxation(rate=1/10minutes, mask=full_mask, target=0)
     full_sponge_u = Relaxation(rate=1/10minutes, mask=full_mask, target=u_g)
