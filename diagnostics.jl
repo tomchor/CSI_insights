@@ -9,44 +9,14 @@ using Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceananigans.Grids: Center, Face
 
-#using Oceanostics.FlowDiagnostics: IsotropicBuoyancyMixingRate, AnisotropicBuoyancyMixingRate
 using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
                                                IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
                                                AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
-                                               PressureRedistribution_y, PressureRedistribution_z
+                                               PressureRedistribution_y, PressureRedistribution_z,
+                                               ShearProduction_y, ShearProduction_z
 
 
 #++++ KERNEL COMPUTED FIELDS
-
-#++++ Shear production terms
-@inline ψ²(i, j, k, grid, ψ) = @inbounds ψ[i, j, k]^2
-@inline ψ′²(i, j, k, grid, ψ, Ψ) = @inbounds (ψ[i, j, k] - Ψ[i, j, k])^2
-
-@kernel function shear_production_y_ccc!(shear_production, grid, u, v, w, U)
-    i, j, k = @index(Global, NTuple)
-    v_int = ℑyᵃᶜᵃ(i, j, k, grid, v) # C, F, C  → C, C, C
-
-    ∂yU = ℑxyᶜᶜᵃ(i, j, k, grid, ∂yᵃᶠᵃ, U) # F, C, C  → F, F, C  → C, C, C
-    uv = ℑxᶜᵃᵃ(i, j, k, grid, u) * v_int
-    uv∂yU = uv * ∂yU
-
-    @inbounds shear_production[i, j, k] = -uv∂yU
-end
-
-
-
-@kernel function shear_production_z_ccc!(shear_production, grid, u, v, w, U)
-    i, j, k = @index(Global, NTuple)
-    w_int = ℑzᵃᵃᶜ(i, j, k, grid, w) # C, C, F  → C, C, C
-
-    ∂zU = ℑxzᶜᵃᶜ(i, j, k, grid, ∂zᵃᵃᶠ, U) # F, C, C  → F, C, F  → C, C, C
-    uw = ℑxᶜᵃᵃ(i, j, k, grid, u) * w_int
-    uw∂zU = uw * ∂zU
-
-    @inbounds shear_production[i, j, k] = -uw∂zU
-end
-#-----
-
 
 #++++ PV components
 @kernel function ertel_potential_vorticity_vertical_fff!(PV, grid, u, v, b, f₀)
@@ -130,13 +100,20 @@ function get_outputs_tuple(model; LES=false)
     b = model.tracers.b
     p = sum(model.pressures)
     
-    U = model.background_fields.velocities.u
-    B = model.background_fields.tracers.b
+    mask_u = Oceananigans.Fields.FunctionField{Face, Center, Center}(full_mask, model.grid)
+    mask_v = Oceananigans.Fields.FunctionField{Center, Face, Center}(full_mask, model.grid)
+    mask_w = Oceananigans.Fields.FunctionField{Center, Center, Face}(full_mask, model.grid)
     
     if as_background
+        U, V, W = model.background_fields.velocities
+        B = model.background_fields.tracers.b
+
         u_tot = u + U
         b_tot = b + B
     else
+        U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
+        B = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
+
         u_tot = u
         b_tot = b
     end
@@ -183,6 +160,11 @@ function get_outputs_tuple(model; LES=false)
         χ = AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz, data=ccc_scratch.data)
     end
 
+    u_dissip = ComputedField((@at (Center, Center, Center) u * rate * mask_u * (u - U)), data=ccc_scratch.data)
+    v_dissip = ComputedField((@at (Center, Center, Center) v * rate * mask_v * v), data=ccc_scratch.data)
+    w_dissip = ComputedField((@at (Center, Center, Center) w * rate * mask_w * w), data=ccc_scratch.data)
+    sponge_dissip = @at (Center, Center, Center) (u_dissip + v_dissip + w_dissip)
+
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
                                  computed_dependencies=(u_tot, v, b_tot), 
                                  parameters=f_0, data=fff_scratch.data)
@@ -193,17 +175,9 @@ function get_outputs_tuple(model; LES=false)
     
     dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, data=ccc_scratch.data)
     dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, data=ccc_scratch.data)
-
     
-    SP_y = KernelComputedField(Center, Center, Center, shear_production_y_ccc!, model;
-                               computed_dependencies=(u, v, w, U),
-                               data=ccc_scratch.data,
-                              )
-    
-    SP_z = KernelComputedField(Center, Center, Center, shear_production_z_ccc!, model;
-                               computed_dependencies=(u, v, w, U),
-                               data=ccc_scratch.data,
-                              )
+    SP_y = ShearProduction_y(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
+    SP_z = ShearProduction_z(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
     #-----
     
     
@@ -227,6 +201,7 @@ function get_outputs_tuple(model; LES=false)
                PV_hor=PV_hor,
                SP_y=SP_y,
                SP_z=SP_z,
+               sponge_dissip=ComputedField(sponge_dissip, data=ccc_scratch.data),
                )
     
     if LES
@@ -245,7 +220,7 @@ end
 
 #++++ Construct outputs into simulation
 function construct_outputs(model, simulation; 
-                           LES=false, simname="TEST", frac=1/8,
+                           LES=false, simname="TEST", frac=1/16,
                            )
 
     if any(startswith("chk.$simname"), readdir("data"))
@@ -315,13 +290,14 @@ function construct_outputs(model, simulation;
     #++++
     @info "Setting up avg writer"
     x_average(F) = AveragedField(F, dims=(1,))
+    xy_average(F) = AveragedField(F, dims=(1,2))
     xz_average(F) = AveragedField(F, dims=(1,3))
     
-    slicer = FieldSlicer(j=Int(grid.Ny*frac):Int(grid.Ny*(1-1*frac)), with_halos=false)
-    hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2), field_slicer=slicer)
-    #hor_mixed_average(F) = WindowedSpatialAverage(AveragedField(F; dims=1); dims=(1, 2), field_slicer=slicer)
+    #slicer = FieldSlicer(j=Int(grid.Ny*frac):Int(grid.Ny*(1-1*frac)), with_halos=false)
+    hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2))
     
     outputs_avg = map(hor_window_average, outputs_snap)
+    #outputs_avg = map(xy_average, outputs_snap)
     outputs_avg = merge(outputs_avg, (b_sorted=mean_sort_b,))
     dims = Dict("b_sorted" => ("zC",),)
     
