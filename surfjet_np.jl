@@ -3,11 +3,11 @@ Pkg.instantiate()
 using ArgParse
 using Printf
 using Oceananigans
-using Oceananigans.Utils
 using Oceananigans.Units
-using Oceananigans.Advection: UpwindBiasedThirdOrder, WENO5
+using Oceananigans.Advection: WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
+using CUDA: has_cuda
 
 
 # Read and parse initial arguments
@@ -29,7 +29,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet4"
+            default = "S2d_CIjet1"
             arg_type = String
     end
     return parse_args(settings)
@@ -198,7 +198,7 @@ function south_mask(x, y, z)
 end
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
 
-rate = 1/10minutes
+const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
     forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
@@ -212,7 +212,7 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-kick = 1e-6
+const kick = 1e-6
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
     u_ic(x, y, z) = 0 #+ kick*randn()
