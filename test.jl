@@ -1,9 +1,13 @@
+using Pkg
+Pkg.instantiate()
 using ArgParse
 using Printf
 using Oceananigans
 using Oceananigans.Units
-using Oceananigans.Fields
+using Oceananigans.Advection: WENO5
+using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
+using CUDA: has_cuda
 
 
 # Read and parse initial arguments
@@ -15,24 +19,24 @@ function parse_command_line_arguments()
 
         "--factor"
             help = "Factor to divide Nh and Nz for"
-            default = 32
+            default = 16
             arg_type = Int
 
         "--arch"
             help = "CPU or GPU"
-            default = "CPU"
+            default = "has_cuda"
             arg_type = String
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet4"
+            default = "S2d_CIjet1"
             arg_type = String
     end
     return parse_args(settings)
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
-arch = eval(Meta.parse(args["arch"]*"()"))
+arch = has_cuda() ? GPU() : CPU()
 fullname = args["fullname"]
 
 setup, jet = split(fullname, "_")
@@ -67,8 +71,7 @@ else
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-simname = "$(prefix)_TEST2$name"
-sponge_frac = 1/16
+simname = "$(prefix)_TEST0$name"
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
@@ -192,15 +195,15 @@ function south_mask(x, y, z)
     y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-
 full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
+
+const rate = 1/10minutes
+full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
     forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
-    full_sponge_0 = Relaxation(rate=1/10minute, mask=full_mask, target=0)
-    full_sponge_u = Relaxation(rate=1/10minute, mask=full_mask, target=u_g)
-    full_sponge_b = Relaxation(rate=1/10minute, mask=full_mask, target=b_g)
+    full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
+    full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
     forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
@@ -208,7 +211,7 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-kick = 1e-6
+const kick = 1e-6
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
     u_ic(x, y, z) = 0 #+ kick*randn()
@@ -231,11 +234,10 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
-    closure = SmagorinskyLilly(C=0.13)
+    closure = SmagorinskyLilly(C=0.16)
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
-    #closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
-    closure = IsotropicDiffusivity(ν=2*νz, κ=2*νz)
+    closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
 model_kwargs = (architecture = arch,
                 grid = grid,
@@ -245,7 +247,7 @@ model_kwargs = (architecture = arch,
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-#                forcing = forcing,
+                forcing = forcing,
                 background_fields = bg_fields,
                 )
 model = IncompressibleModel(; model_kwargs..., closure=closure)
@@ -274,7 +276,7 @@ wizard = TimeStepWizard(cfl=0.8,
 
 # Finally define Simulation!
 #++++
-include("diagnostics.jl")
+include("diagnostics_test.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
