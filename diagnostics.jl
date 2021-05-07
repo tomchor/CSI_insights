@@ -1,6 +1,7 @@
 using Printf
 using KernelAbstractions: @index, @kernel
 using Statistics: mean
+using NCDatasets
 
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Units
@@ -92,53 +93,53 @@ end
 #-----
 
 
+#++++ Unpack model variables
+ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
+fcc_scratch = Field(Face, Center, Center, model.architecture, model.grid)
+ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
+cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
+fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
+
+u, v, w = model.velocities
+b = model.tracers.b
+p = sum(model.pressures)
+
+if as_background
+    U, V, W = model.background_fields.velocities
+    B = model.background_fields.tracers.b
+
+    u_tot = u + U
+    b_tot = b + B
+else
+    U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
+    B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
+
+    u_tot = u
+    b_tot = b
+end
+
+if LES
+    νₑ = νz = model.diffusivities.νₑ
+    κₑ = κz = model.diffusivities.νₑ # Assumes Pr=1
+else
+    if model.closure isa IsotropicDiffusivity
+        νx = νy = νz = model.closure.ν
+        κx = κy = κz = model.closure.κ[:b]
+    elseif model.closure isa AnisotropicDiffusivity
+        νx = model.closure.νx; νy = model.closure.νy; νz = model.closure.νz
+        κx = model.closure.κx[:b]; κy = model.closure.κy[:b]; κz = model.closure.κz[:b]
+    end
+end
+#---
+
 #++++ CREATE SNAPSHOT OUTPUTS
 function get_outputs_tuple(model; LES=false)
     
-    #++++ Preamble
-    u, v, w = model.velocities
-    b = model.tracers.b
-    p = sum(model.pressures)
-    
+    #++++ Create mask fields
     mask_u = Oceananigans.Fields.FunctionField{Face, Center, Center}(full_mask, model.grid)
     mask_v = Oceananigans.Fields.FunctionField{Center, Face, Center}(full_mask, model.grid)
     mask_w = Oceananigans.Fields.FunctionField{Center, Center, Face}(full_mask, model.grid)
-    
-    if as_background
-        U, V, W = model.background_fields.velocities
-        B = model.background_fields.tracers.b
 
-        u_tot = u + U
-        b_tot = b + B
-    else
-        U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
-        B = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
-
-        u_tot = u
-        b_tot = b
-    end
-    
-    
-    if LES
-        νₑ = νz = model.diffusivities.νₑ
-        κₑ = κz = model.diffusivities.νₑ # Assumes Pr=1
-    else
-        if model.closure isa IsotropicDiffusivity
-            νx = νy = νz = model.closure.ν
-            κx = κy = κz = model.closure.κ[:b]
-        elseif model.closure isa AnisotropicDiffusivity
-            νx = model.closure.νx; νy = model.closure.νy; νz = model.closure.νz
-            κx = model.closure.κx[:b]; κy = model.closure.κy[:b]; κz = model.closure.κz[:b]
-        end
-    end
-    #----
-    
-    #++++ Create scratch space
-    ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
-    fcc_scratch = Field(Face, Center, Center, model.architecture, model.grid)
-    ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
-    cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
-    fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
     #----
 
 
@@ -217,12 +218,30 @@ function get_outputs_tuple(model; LES=false)
 end
 #----
 
+#++++ Write background variables to dataset
+function write_to_ds(dsname, varname, data; coords=("xC", "yC", "zC"), dtype=Float64)
+    ds = NCDataset(dsname, "a")
+    newvar = defVar(ds, varname, dtype, coords)
+    newvar[:,:,:] = data
+    close(ds)
+end
+
+function save_UB(dsname)
+    Ucf = ComputedField(U+0*u, data=fcc_scratch.data); compute!(Ucf)
+    Bcf = ComputedField(B+0*b, data=ccc_scratch.data); compute!(Ucf)
+
+    write_to_ds(dsname, "U", interior(Ucf), coords=("xF", "yC", "zC"))
+    write_to_ds(dsname, "B", interior(Bcf), coords=("xC", "yC", "zC"))
+end
+#----
+
 
 #++++ Construct outputs into simulation
 function construct_outputs(model, simulation; 
                            LES=false, simname="TEST", frac=1/16,
                            )
 
+    #++++ Check for checkpoints
     if any(startswith("chk.$simname"), readdir("data"))
         @info "Checkpoint for $simname found. Assuming this is a pick-up simulation! Setting mode to append."
         mode = "a"
@@ -230,6 +249,7 @@ function construct_outputs(model, simulation;
         @info "No checkpoint for $simname found. Setting mode to clobber."
         mode = "c"
     end
+    #----
 
     #++++ Define sorting b function
     function flattenedsort(A, dim_order::Union{Tuple, AbstractVector})
@@ -253,7 +273,7 @@ function construct_outputs(model, simulation;
     #++++
     @info "Setting up out writer"
     outputs_snap = get_outputs_tuple(model, LES=LES)
-    simulation.output_writers[:out_writer] =
+    simulation.output_writers[:out_writer] = out_writer =
         NetCDFOutputWriter(model, outputs_snap,
                            filepath = @sprintf("data/out.%s.nc", simname),
                            schedule = TimeInterval(6hours),
@@ -269,7 +289,7 @@ function construct_outputs(model, simulation;
     @info "Setting up vid writer"
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
-    outputs_vid = delete(outputs_snap, (:SP_y, :SP_z, :dwpdz_ρ, :dvpdy_ρ, :p))
+    outputs_vid = delete(outputs_snap, (:dwpdz_ρ, :dvpdy_ρ, :p))
     if ndims==2 outputs_vid = merge(outputs_vid, (b_sorted=sort_b,)) end
     dims = Dict("b_sorted" => ("xC", "yC", "zC"),)
     
@@ -326,10 +346,15 @@ function construct_outputs(model, simulation;
                                              )
     #-----
 
+
+    #++++ Write Background fields
+    save_UB("data/out.$simname.nc")
+    save_UB("data/vid.$simname.nc")
+    save_UB("data/avg.$simname.nc")
+    #----
+
     return checkpointer
 end
 #-----
-
-
 
 
