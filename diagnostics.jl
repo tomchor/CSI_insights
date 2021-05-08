@@ -222,7 +222,7 @@ end
 function write_to_ds(dsname, varname, data; coords=("xC", "yC", "zC"), dtype=Float64)
     ds = NCDataset(dsname, "a")
     newvar = defVar(ds, varname, dtype, coords)
-    newvar[:,:,:] = data
+    newvar[:,:,:] = Array(data)
     close(ds)
 end
 
