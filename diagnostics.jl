@@ -348,9 +348,10 @@ function construct_outputs(model, simulation;
 
 
     #++++ Write Background fields
-    save_UB("data/out.$simname.nc")
-    save_UB("data/vid.$simname.nc")
-    save_UB("data/avg.$simname.nc")
+    if mode=="c"
+        save_UB("data/out.$simname.nc")
+        save_UB("data/avg.$simname.nc")
+    end
     #----
 
     return checkpointer
