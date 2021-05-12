@@ -71,7 +71,7 @@ else
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-simname = "$(prefix)_$name"
+simname = "$(prefix)_$(name)"
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
@@ -236,6 +236,7 @@ end
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
     closure = SmagorinskyLilly(C=0.16)
+    #closure = AnisotropicMinimumDissipation()
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)

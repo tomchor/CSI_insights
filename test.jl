@@ -29,7 +29,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_CIjet1"
+            default = "S3d_SIjet3"
             arg_type = String
     end
     return parse_args(settings)
@@ -276,7 +276,7 @@ wizard = TimeStepWizard(cfl=0.8,
 
 # Finally define Simulation!
 #++++
-include("diagnostics_test.jl")
+include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 

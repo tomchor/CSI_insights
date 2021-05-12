@@ -47,11 +47,21 @@ set!(model, u=u_ic, v=v_ic, b=u_ic)
 #-----
 
 #++++ SortedField by operation
-struct SortingOperand{F, D}
-          field :: F
-           dims :: D
+using Oceananigans.AbstractOperations: AbstractOperation
+struct SO3{X, Y, Z, R, G} <: AbstractOperation{X, Y, Z, R, G}
+              field :: AbstractField
+               dims :: Tuple
+       architecture :: R
+               grid :: G
+
+    function SO3{X, Y, Z}(field::AbstractField, dims::Tuple, arch::R, grid::G) where {X, Y, Z, R, G}
+        return new{X, Y, Z, R, G}(field, dims, arch, grid)
+    end
 end
-SortedComputedField = ComputedField{X, Y, Z, S, <:RandomOperand} where {X, Y, Z, S}
+
+
+SortedComputedField = ComputedField{X, Y, Z, S, <:SortingOperand} where {X, Y, Z, S}
+pause
 
 function compute!(ψ::SortedComputedField)
     arch = architecture(ψ)
@@ -65,7 +75,7 @@ struct RandomOperand
     amplitude :: Float64
 end
 
-const RandomComputedField = ComputedField{X, Y, Z, S, <:RandomOperand} where {X, Y, Z, S}
+RandomComputedField = ComputedField{X, Y, Z, S, <:RandomOperand} where {X, Y, Z, S}
 
 function compute!(ψ::RandomComputedField)
     arch = architecture(ψ)
@@ -77,7 +87,9 @@ end
 
 # Build random streamfunction
 arch = GPU()
-dψdt = ComputedField(Face, Face, Center, RandomOperand(forcing_amplitude), arch, grid)
+forcing_amplitude = 0.1
+dψdt = ComputedField(RandomOperand(forcing_amplitude))
+pause
 #----
 
 
