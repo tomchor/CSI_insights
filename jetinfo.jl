@@ -164,6 +164,25 @@ end
 
 
 
+    SIjet6 = (name = "SIsurfjet6",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 2.5e-6,
+              Ny = Ny,
+              Nz = Nz,
+              Ly = Ly,
+              Lz = Lz,
+              σy = 1200,
+              σz = 80,
+              y₀ = +Ly/2,
+              z₀ = 0,
+              N2_pyc = 2.5e-6,
+              νz = νz,
+              sponge_frac = sponge_frac,
+              )
+
+
+
     Stabjet1 = (name = "stabsurfjet1",
                 f0 = f0,
                 u₀ = -0.08,
