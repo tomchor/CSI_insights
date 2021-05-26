@@ -191,13 +191,31 @@ end
                 Nz = Nz,
                 Ly = Ly,
                 Lz = Lz,
-                σy = 800,
+                σy = 1600,
                 σz = 80,
                 y₀ = +Ly/2,
                 z₀ = 0,
                 N2_pyc = 1e-5,
                 νz = νz,
-                sponge_frac = sponge_frac,
+                sponge_frac = 1/32,
+                )
+
+
+    Sloshjet1 = (name = "sloshsurfjet1",
+                f0 = f0,
+                u₀ = -0.08,
+                N2_inf = 1e-5,
+                Ny = Ny,
+                Nz = Nz,
+                Ly = Ly,
+                Lz = Lz,
+                σy = 1600,
+                σz = 80,
+                y₀ = +Ly/2,
+                z₀ = 0,
+                N2_pyc = 1e-5,
+                νz = νz,
+                sponge_frac = 1/32,
                 )
 
 
