@@ -3,6 +3,7 @@ Pkg.instantiate()
 using ArgParse
 using Printf
 using Oceananigans
+@info "Loaded Oceananigans"
 using Oceananigans.Units
 using Oceananigans.Advection: WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
@@ -212,11 +213,12 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-const kick = 1e-6
+const kick = 1e-4
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
     u_ic(x, y, z) = 0 #+ kick*randn()
     v_ic(x, y, z) = 0 #+ kick*randn()
+    w_ic(x, y, z) = 0 #+ kick*randn()
     b_ic(x, y, z) = + 1e-8*randn()
 
     bg_fields = (u=u_g, b=b_g,)
@@ -224,6 +226,7 @@ else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
     v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
 
     bg_fields = NamedTuple()
@@ -245,7 +248,7 @@ model_kwargs = (architecture = arch,
                 grid = grid,
                 advection = WENO5(),
                 timestepper = :RungeKutta3,
-                coriolis = FPlane(f=f0),
+                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f0), # do we want sloshing?
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
@@ -259,7 +262,7 @@ println("\n", model, "\n")
 
 # Adding the ICs
 #++++
-set!(model, u=u_ic, v=v_ic, b=b_ic)
+set!(model, u=u_ic, v=v_ic, w=w_ic, b=b_ic)
 
 v̄ = sum(model.velocities.v.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
 model.velocities.v.data.parent .-= v̄
@@ -271,7 +274,7 @@ model.velocities.v.data.parent .-= v̄
 u_scale = abs(u₀)
 Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
 wizard = TimeStepWizard(cfl=0.8,
-                        diffusive_cfl=0.5,
+                        diffusive_cfl=0.8,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
 
@@ -282,7 +285,7 @@ include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
-                        stop_time=10*T_inertial,
+                        stop_time=min(10*T_inertial, 20days),
                         wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
