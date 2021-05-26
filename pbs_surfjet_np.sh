@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #PBS -A UMCP0012
-#PBS -N S2d_SIjet3
+#PBS -N S3d_CIjet1
 #PBS -k eod
-#PBS -o logs/S2d_SIjet3.out
-#PBS -e logs/S2d_SIjet3.err
+#PBS -o logs/S3d_CIjet1.out
+#PBS -e logs/S3d_CIjet1.err
 #PBS -l walltime=24:00:00
 #PBS -q casper
 #PBS -l select=1:ncpus=1:ngpus=1
@@ -22,5 +22,5 @@ module load peak_memusage
 export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
 
 peak_memusage.exe /glade/u/home/tomasc/repos/julia_1.5.2/julia --project \
-    surfjet_np.jl --fullname=S2d_SIjet3 --arch=GPU --factor=1 2>&1 | tee out/S2d_SIjet3.out
+    surfjet_np.jl --fullname=S3d_CIjet1 --arch=GPU --factor=1 2>&1 | tee out/S3d_CIjet1.out
 

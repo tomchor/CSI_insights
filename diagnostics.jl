@@ -177,8 +177,8 @@ function get_outputs_tuple(model; LES=false)
     dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, data=ccc_scratch.data)
     dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, data=ccc_scratch.data)
     
-    SP_y = ShearProduction_y(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
-    SP_z = ShearProduction_z(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
+    SP_y = ShearProduction_y(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
+    SP_z = ShearProduction_z(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
     #-----
     
     
