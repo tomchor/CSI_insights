@@ -1,7 +1,7 @@
 using Printf
 using KernelAbstractions: @index, @kernel
 using Statistics: mean
-using NCDatasets
+import NCDatasets as NCD
 
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Units
@@ -13,8 +13,8 @@ using Oceananigans.Grids: Center, Face
 using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
                                                IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
                                                AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
-                                               PressureRedistribution_y, PressureRedistribution_z,
-                                               ShearProduction_y, ShearProduction_z
+                                               YPressureRedistribution, ZPressureRedistribution,
+                                               YShearProduction, ZShearProduction
 
 
 #++++ KERNEL COMPUTED FIELDS
@@ -174,11 +174,11 @@ function get_outputs_tuple(model; LES=false)
                                  computed_dependencies=(u_tot, v, w, b_tot), 
                                  parameters=f_0, data=fff_scratch.data)
     
-    dvpdy_ρ = PressureRedistribution_y(model, v, p, ρ₀, data=ccc_scratch.data)
-    dwpdz_ρ = PressureRedistribution_z(model, w, p, ρ₀, data=ccc_scratch.data)
+    dvpdy_ρ = YPressureRedistribution(model, v, p, ρ₀, data=ccc_scratch.data)
+    dwpdz_ρ = ZPressureRedistribution(model, w, p, ρ₀, data=ccc_scratch.data)
     
-    SP_y = ShearProduction_y(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
-    SP_z = ShearProduction_z(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
+    SP_y = YShearProduction(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
+    SP_z = ZShearProduction(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
     #-----
     
     
@@ -220,10 +220,10 @@ end
 
 #++++ Write background variables to dataset
 function write_to_ds(dsname, varname, data; coords=("xC", "yC", "zC"), dtype=Float64)
-    ds = NCDataset(dsname, "a")
-    newvar = defVar(ds, varname, dtype, coords)
+    ds = NCD.NCDataset(dsname, "a")
+    newvar = NCD.defVar(ds, varname, dtype, coords)
     newvar[:,:,:] = Array(data)
-    close(ds)
+    NCD.close(ds)
 end
 
 function save_UB(dsname)
