@@ -213,12 +213,12 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-const kick = 1e-4
+const kick = 1e-5
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
-    u_ic(x, y, z) = 0 #+ kick*randn()
-    v_ic(x, y, z) = 0 #+ kick*randn()
-    w_ic(x, y, z) = 0 #+ kick*randn()
+    u_ic(x, y, z) = + kick*randn()
+    v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = + 1e-8*randn()
 
     bg_fields = (u=u_g, b=b_g,)
