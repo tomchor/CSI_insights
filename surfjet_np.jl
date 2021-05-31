@@ -212,7 +212,7 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-const kick = 1e-6
+const kick = 0
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
     u_ic(x, y, z) = 0 #+ kick*randn()
