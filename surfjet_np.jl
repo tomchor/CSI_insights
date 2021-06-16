@@ -61,11 +61,11 @@ end
 as_background=false
 include("jetinfo.jl")
 
-if ndims==3
+if ndims==3 # 3D LES simulation
     simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7), jet)
     prefix = "PNN"
     LES = true
-else
+else # 2D DNS simulation
     simulation_nml = getproperty(SurfaceJetSimulations(), jet)
     prefix = "FNN"
     LES = false
@@ -273,19 +273,24 @@ model.velocities.v.data.parent .-= v̄
 #++++
 u_scale = abs(u₀)
 Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.8,
-                        diffusive_cfl=0.8,
+wizard = TimeStepWizard(cfl=0.9,
+                        diffusive_cfl=0.9,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
 
 
 # Finally define Simulation!
 #++++
+if ndims==3 # 3D LES simulation
+    stop_time = min(10*T_inertial, 20days)
+else # 2D DNS simulation
+    stop_time = min(3*T_inertial, 20days)
+end
 include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
-                        stop_time=min(10*T_inertial, 20days),
+                        stop_time=stop_time,
                         wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),

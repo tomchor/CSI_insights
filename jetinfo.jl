@@ -47,8 +47,8 @@ end
 
 @with_kw struct SurfaceJetSimulations
     f0 = 1e-4
-    Ny = 2^14
-    Nz = 2^8
+    Ny = 10*2^9
+    Nz = 2^9
     Ly = 15_000 # m
     Lz = 80 # m
     N2_pyc = 1e-6 # 1/s²
@@ -59,6 +59,24 @@ end
               f0 = f0,
               u₀ = -0.2,
               N2_inf = 1e-5,
+              N2_pyc = 1e-5,
+              Ny = 100*2^9,
+              Nz = 2^9,
+              Ly = 8000,
+              Lz = Lz,
+              σy = 800,
+              σz = 80,
+              y₀ = +8000/2,
+              z₀ = 0,
+              νz = 5e-4,
+              sponge_frac = sponge_frac,
+             )
+
+    CIjet2 = (name = "CIsurfjet2",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 5e-5,
+              N2_pyc = 5e-5,
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
@@ -67,10 +85,27 @@ end
               σz = 80,
               y₀ = +Ly/2,
               z₀ = 0,
-              N2_pyc = 1e-5,
               νz = νz,
               sponge_frac = sponge_frac,
              )
+
+    CIjet3 = (name = "CIsurfjet3",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 5e-6,
+              N2_pyc = 5e-6,
+              Ny = 2^15,
+              Nz = 2^9,
+              Ly = 15_000,
+              Lz = 80,
+              σy = 800,
+              σz = 80,
+              y₀ = +Ly/2,
+              z₀ = 0,
+              νz = 2e-4,
+              sponge_frac = sponge_frac,
+             )
+
 
     SIjet1 = (name = "SIsurfjet1",
               f0 = f0,
@@ -130,16 +165,16 @@ end
               f0 = f0,
               u₀ = -0.2,
               N2_inf = 1e-6,
-              Ny = Ny,
-              Nz = Nz,
-              Ly = Ly,
+              Ny = 100*2^9,
+              Nz = 2^9,
+              Ly = 8000,
               Lz = Lz,
               σy = 1600,
               σz = 80,
-              y₀ = +Ly/2,
+              y₀ = +4000,
               z₀ = 0,
               N2_pyc = 1e-6,
-              νz = νz,
+              νz = 5e-4,
               sponge_frac = sponge_frac,
              )
 
