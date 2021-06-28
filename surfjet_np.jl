@@ -40,6 +40,7 @@ factor = args["factor"]
 arch = eval(Meta.parse(args["arch"]*"()"))
 fullname = args["fullname"]
 
+
 setup, jet = split(fullname, "_")
 ndims = parse(Int, strip(setup, ['S', 'd']))
 jet = Symbol(jet)
@@ -178,7 +179,6 @@ bbc = TracerBoundaryConditions(grid,
 #++++
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
-@inline mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
 const frac = sponge_frac
 
 function bottom_mask(x, y, z)
@@ -209,6 +209,7 @@ else
     forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 end
 #-----
+
 
 
 # Set up ICs and/or Background Fields
@@ -272,7 +273,7 @@ model.velocities.v.data.parent .-= v̄
 # Define time-stepping
 #++++
 u_scale = abs(u₀)
-Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
+Δt = 1/2 * min(grid.Δz, grid.Δy) / u_scale
 wizard = TimeStepWizard(cfl=0.9,
                         diffusive_cfl=0.9,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
@@ -310,6 +311,8 @@ checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, fr
 #+++++
 println("\n", simulation,
         "\n",)
+if has_cuda() run(`nvidia-smi`) end
+
 
 @printf("---> Starting run!\n")
 run!(simulation, pickup=true)

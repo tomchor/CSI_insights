@@ -6,8 +6,10 @@ using Parameters
     Nz = 2^11
     Ly = 15_000 # m
     Lz = 500 # m
-    νz = 8e-4
+    νz = 1e-3
     sponge_frac = 1/16
+    three_d = false
+
     JD15exp = (name = "JD15exp",
                f0 = f0,
                u₀ = 0.35e0,
@@ -30,13 +32,13 @@ using Parameters
                u₀ = -0.4, # m/s
                N2_inf = 4e-5, # 1/s²
                N2_pyc = 4e-5, # 1/s²
-               Ny = Ny,
-               Nz = Nz,
-               Ly = Ly,
+               Ny = three_d ? Ny : 28*2^9,
+               Nz = three_d ? Nz : 2^9,
+               Ly = 12_000,
                Lz = Lz,
                σy = 1600, # m
                σz = 80, # m
-               y₀ = Ly/3, # m
+               y₀ = 0.4 * 12_000, # m
                z₀ = -Lz/2, # m
                νz = νz,
                sponge_frac = sponge_frac,
