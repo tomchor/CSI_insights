@@ -30,7 +30,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_CIjet1"
+            default = "S2d_SIjet1"
             arg_type = String
     end
     return parse_args(settings)
