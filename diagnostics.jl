@@ -10,11 +10,11 @@ using Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceananigans.Grids: Center, Face
 
-using Oceanostics.TurbulentKineticEnergyTerms: KineticEnergy, 
-                                               IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
-                                               AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
-                                               YPressureRedistribution, ZPressureRedistribution,
-                                               YShearProduction, ZShearProduction
+using Oceanostics: KineticEnergy, 
+                   IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
+                   AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
+                   YPressureRedistribution, ZPressureRedistribution,
+                   YShearProduction, ZShearProduction
 
 
 #++++ KERNEL COMPUTED FIELDS
@@ -177,8 +177,8 @@ function get_outputs_tuple(model; LES=false)
     dvpdy_ρ = YPressureRedistribution(model, v, p, ρ₀, data=ccc_scratch.data)
     dwpdz_ρ = ZPressureRedistribution(model, w, p, ρ₀, data=ccc_scratch.data)
     
-    SP_y = YShearProduction(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
-    SP_z = ZShearProduction(model, u, v, w, U, 0, 0, data=ccc_scratch.data)
+    shearprod_y = YShearProduction(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
+    shearprod_z = ZShearProduction(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
     #-----
     
     
@@ -200,8 +200,8 @@ function get_outputs_tuple(model; LES=false)
                χ=χ,
                PV_ver=PV_ver,
                PV_hor=PV_hor,
-               SP_y=SP_y,
-               SP_z=SP_z,
+               shearprod_y=shearprod_y,
+               shearprod_z=shearprod_z,
                sponge_dissip=ComputedField(sponge_dissip, data=ccc_scratch.data),
                )
     

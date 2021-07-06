@@ -6,8 +6,10 @@ using Parameters
     Nz = 2^11
     Ly = 15_000 # m
     Lz = 500 # m
-    νz = 8e-4
+    νz = 1e-3
     sponge_frac = 1/16
+    three_d = false
+
     JD15exp = (name = "JD15exp",
                f0 = f0,
                u₀ = 0.35e0,
@@ -30,13 +32,13 @@ using Parameters
                u₀ = -0.4, # m/s
                N2_inf = 4e-5, # 1/s²
                N2_pyc = 4e-5, # 1/s²
-               Ny = Ny,
-               Nz = Nz,
-               Ly = Ly,
+               Ny = three_d ? Ny : 28*2^9,
+               Nz = three_d ? Nz : 2^9,
+               Ly = 12_000,
                Lz = Lz,
                σy = 1600, # m
                σz = 80, # m
-               y₀ = Ly/3, # m
+               y₀ = 0.4 * 12_000, # m
                z₀ = -Lz/2, # m
                νz = νz,
                sponge_frac = sponge_frac,
@@ -47,8 +49,8 @@ end
 
 @with_kw struct SurfaceJetSimulations
     f0 = 1e-4
-    Ny = 2^14
-    Nz = 2^8
+    Ny = 10*2^9
+    Nz = 2^9
     Ly = 15_000 # m
     Lz = 80 # m
     N2_pyc = 1e-6 # 1/s²
@@ -59,6 +61,24 @@ end
               f0 = f0,
               u₀ = -0.2,
               N2_inf = 1e-5,
+              N2_pyc = 1e-5,
+              Ny = 100*2^9,
+              Nz = 2^9,
+              Ly = 8000,
+              Lz = Lz,
+              σy = 800,
+              σz = 80,
+              y₀ = +8000/2,
+              z₀ = 0,
+              νz = 5e-4,
+              sponge_frac = sponge_frac,
+             )
+
+    CIjet2 = (name = "CIsurfjet2",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 5e-5,
+              N2_pyc = 5e-5,
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
@@ -67,10 +87,27 @@ end
               σz = 80,
               y₀ = +Ly/2,
               z₀ = 0,
-              N2_pyc = 1e-5,
               νz = νz,
               sponge_frac = sponge_frac,
              )
+
+    CIjet3 = (name = "CIsurfjet3",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 5e-6,
+              N2_pyc = 5e-6,
+              Ny = 2^15,
+              Nz = 2^9,
+              Ly = 15_000,
+              Lz = 80,
+              σy = 800,
+              σz = 80,
+              y₀ = +Ly/2,
+              z₀ = 0,
+              νz = 2e-4,
+              sponge_frac = sponge_frac,
+             )
+
 
     SIjet1 = (name = "SIsurfjet1",
               f0 = f0,
@@ -130,16 +167,16 @@ end
               f0 = f0,
               u₀ = -0.2,
               N2_inf = 1e-6,
-              Ny = Ny,
-              Nz = Nz,
-              Ly = Ly,
+              Ny = 100*2^9,
+              Nz = 2^9,
+              Ly = 8000,
               Lz = Lz,
               σy = 1600,
               σz = 80,
-              y₀ = +Ly/2,
+              y₀ = +4000,
               z₀ = 0,
               N2_pyc = 1e-6,
-              νz = νz,
+              νz = 5e-4,
               sponge_frac = sponge_frac,
              )
 
@@ -164,6 +201,25 @@ end
 
 
 
+    SIjet6 = (name = "SIsurfjet6",
+              f0 = f0,
+              u₀ = -0.2,
+              N2_inf = 2.5e-6,
+              Ny = Ny,
+              Nz = Nz,
+              Ly = Ly,
+              Lz = Lz,
+              σy = 1200,
+              σz = 80,
+              y₀ = +Ly/2,
+              z₀ = 0,
+              N2_pyc = 2.5e-6,
+              νz = νz,
+              sponge_frac = sponge_frac,
+              )
+
+
+
     Stabjet1 = (name = "stabsurfjet1",
                 f0 = f0,
                 u₀ = -0.08,
@@ -172,13 +228,31 @@ end
                 Nz = Nz,
                 Ly = Ly,
                 Lz = Lz,
-                σy = 800,
+                σy = 1600,
                 σz = 80,
                 y₀ = +Ly/2,
                 z₀ = 0,
                 N2_pyc = 1e-5,
                 νz = νz,
-                sponge_frac = sponge_frac,
+                sponge_frac = 1/32,
+                )
+
+
+    Sloshjet1 = (name = "sloshsurfjet1",
+                f0 = f0,
+                u₀ = -0.08,
+                N2_inf = 1e-5,
+                Ny = Ny,
+                Nz = Nz,
+                Ly = Ly,
+                Lz = Lz,
+                σy = 1600,
+                σz = 80,
+                y₀ = +Ly/2,
+                z₀ = 0,
+                N2_pyc = 1e-5,
+                νz = νz,
+                sponge_frac = 1/32,
                 )
 
 

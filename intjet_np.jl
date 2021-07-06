@@ -1,11 +1,14 @@
+using Pkg
+Pkg.instantiate()
 using ArgParse
 using Printf
-using Oceananigans; oc = Oceananigans
-using Oceananigans.Utils
+using Oceananigans
+@info "Loaded Oceananigans"
 using Oceananigans.Units
-using Oceananigans.Advection: UpwindBiasedThirdOrder
+using Oceananigans.Advection: WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
+using CUDA: has_cuda
 
 
 # Parse initial arguments
@@ -17,7 +20,7 @@ function parse_command_line_arguments()
 
         "--factor"
             help = "Factor to divide Nh and Nz for"
-            default = 16
+            default = 8
             arg_type = Int
 
         "--arch"
@@ -25,21 +28,30 @@ function parse_command_line_arguments()
             default = "CPU"
             arg_type = String
 
-        "--jet"
-            help = "Name of jet in jetinfo.jl"
-            default = :CIjet01
-            arg_type = Symbol
+        "--fullname"
+            help = "Setup and name of jet in jetinfo.jl"
+            default = "I3d_CIjet01"
+            arg_type = String
     end
     return parse_args(settings)
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
 arch = eval(Meta.parse(args["arch"]*"()"))
-jet = args["jet"]
+fullname = args["fullname"]
 
 
-@printf("Starting Oc with jet %s, a dividing factor of %d and a %s architecture\n", 
-        args["jet"],
+setup, jet = split(fullname, "_")
+ndims = parse(Int, strip(setup, ['I', 'd']))
+jet = Symbol(jet)
+
+if ndims ∉ [2,3] # Validade input
+    throw(AssertionError("Dimensions must be 2 or 3"))
+end
+
+@printf("Starting %sd jet %s with a dividing factor of %d and a %s architecture\n", 
+        ndims,
+        jet,
         factor,
         arch,)
 #-----
@@ -47,26 +59,40 @@ jet = args["jet"]
 
 # Get simulation parameters
 #++++
-LES = false
 as_background=false
 include("jetinfo.jl")
 
-simulation_nml = getproperty(InteriorJetSimulations(), jet)
+if ndims==3 # 3D LES simulation
+    simulation_nml = getproperty(InteriorJetSimulations(Ny=400*2^3, Nz=2^8, three_d=true), jet)
+    prefix = "PNN"
+    LES = true
+else # 2D DNS simulation
+    simulation_nml = getproperty(InteriorJetSimulations(three_d=false), jet)
+    prefix = "FNN"
+    LES = false
+end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-simname = @sprintf("FNN_%s", name)
+simname = "$(prefix)_$(name)"
+pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
 # Set GRID
 #++++  GRID
-Nx = 1
-Lx = 6 * (Ly / Ny) * Nx
+if ndims==3
+    Nx = Ny÷32
+    Lx = (Ly / Ny) * Nx
+else
+    Nx = factor
+    Lx = 6 * (Ly / Ny) * Nx
+end
 topology = (Periodic, Bounded, Bounded)
-grid = RegularRectilinearGrid(size=(Nx, Ny÷factor, Nz÷factor),
-                            x=(0, Lx),
-                            y=(0, Ly),
-                            z=(-Lz, 0), 
-                            topology=topology)
+
+grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
+                              x=(0, Lx),
+                              y=(0, Ly),
+                              z=(-Lz, 0), 
+                              topology=topology)
 println("\n", grid, "\n")
 #-----
 
@@ -102,14 +128,14 @@ const z_c = -40
 const z_m = z_c - n2_pyc/n2_inf*(z_c+Hz)
 const f_0 = f0
 
-gaussian(ψ) = exp(-ψ^2)
-intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
-umask(Y, Z) = gaussian(Y) * gaussian(Z)
-bmask(Y, Z) = (sig_y * intgaussian(Y)) * (-2Z * gaussian(Z) / sig_z)
+@inline gaussian(ψ) = exp(-ψ^2)
+@inline intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
+@inline umask(Y, Z) = gaussian(Y) * gaussian(Z)
+@inline bmask(Y, Z) = (sig_y * intgaussian(Y)) * (-2Z * gaussian(Z) / sig_z)
 
 u_g(x, y, z, t) = u_0 * umask((y-y_0)/sig_y, (z-z_0)/sig_z)
-b_g(x, y, z, t) = -u_0*f_0 * bmask((y-y_0)/sig_y, (z-z_0)/sig_z) + n2_inf * (z+Hz/2)
-dudz_g(x, y, z, t) = + u_0 * gaussian((y-y_0)/sig_y) * (-2(z-z_0)/sig_z^2) * gaussian((z-z_0)/sig_z)
+b_g(x, y, z, t) = -u_0*f_0 * bmask((y-y_0)/sig_y, (z-z_0)/sig_z) + n2_inf * (z+Hz)
+@inline dudz_g(x, y, z, t) = + u_0 * gaussian((y-y_0)/sig_y) * (-2(z-z_0)/sig_z^2) * gaussian((z-z_0)/sig_z)
 #-----
 
 # Setting BCs
@@ -147,7 +173,6 @@ bbc = TracerBoundaryConditions(grid,
 #++++
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
-const Hy = grid.Ly
 const frac = sponge_frac
 
 @inline function bottom_mask(x, y, z)
@@ -166,14 +191,13 @@ end
     y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
+full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z) #+ bottom_mask(x, y, z) + top_mask(x, y, z)
 
-full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
-rate = 1/5hours
+const rate = 1/30minutes
+full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
-    full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
     forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
 else
-    full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
     full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
     forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
@@ -184,11 +208,12 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-kick = 1e-6
+const kick = 0
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
     u_ic(x, y, z) = + kick*randn()
     v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = + 1e-8*randn()
 
     bg_fields = (u=u_g, b=b_g,)
@@ -196,6 +221,7 @@ else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
     v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
 
     bg_fields = NamedTuple()
@@ -207,70 +233,67 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
-    closure = SmagorinskyLilly(C=0.23)
+    closure = SmagorinskyLilly(C=0.16)
+    #closure = AnisotropicMinimumDissipation()
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
-model = IncompressibleModel(architecture = arch,
-                            grid = grid,
-                            advection = UpwindBiasedThirdOrder(),
-                            timestepper = :RungeKutta3,
-                            closure = closure,
-                            coriolis = FPlane(f=f0),
-                            tracers = (:b,),
-                            buoyancy = BuoyancyTracer(),
-                            boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                            forcing = forcing,
-                            background_fields = bg_fields,
-                            )
+model_kwargs = (architecture = arch,
+                grid = grid,
+                advection = WENO5(),
+                timestepper = :RungeKutta3,
+                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f0), # do we want sloshing?
+                tracers = (:b,),
+                buoyancy = BuoyancyTracer(),
+                boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
+                forcing = forcing,
+                background_fields = bg_fields,
+                )
+model = IncompressibleModel(; model_kwargs..., closure=closure)
 println("\n", model, "\n")
 #-----
 
 
 # Adding the ICs
 #++++
-set!(model, u=u_ic, v=v_ic, b=b_ic)
+set!(model, u=u_ic, v=v_ic, w=w_ic, b=b_ic)
 
 v̄ = sum(model.velocities.v.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
+w̄ = sum(model.velocities.w.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
 model.velocities.v.data.parent .-= v̄
-
-
-if false
-    using Plots; pyplot()
-    xC = oc.Grids.xnodes(Center, grid)
-    yC = oc.Grids.ynodes(Center, grid)
-    zC = oc.Grids.znodes(Center, grid)
-    zF = oc.Grids.znodes(Face, grid)
-
-    contourf(y, z, interior(model.tracers.b)[1,:,:]', levels=30)
-end
+model.velocities.w.data.parent .-= w̄
 #-----
 
 
 # Define time-stepping and printing
 #++++
 u_scale = abs(u₀)
-Δt = 1/2 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.8,
-                        diffusive_cfl=0.8,
-                        Δt=Δt, max_change=1.01, min_change=0.02, max_Δt=Inf, min_Δt=0.2seconds)
+Δt = 1/2 * min(grid.Δz, grid.Δy) / u_scale
+wizard = TimeStepWizard(cfl=0.9,
+                        diffusive_cfl=0.9,
+                        Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.2seconds)
 #-----
 
 
 # Finally define Simulation!
 #++++
+if ndims==3 # 3D LES simulation
+    stop_time = min(10*T_inertial, 20days)
+else # 2D DNS simulation
+    stop_time = min(10*T_inertial, 20days)
+end
 include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
-                        stop_time=20*T_inertial,
+                        stop_time=stop_time,
                         wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
+println("\n", simulation, "\n")
 #-----
-
 
 
 # DIAGNOSTICS
@@ -284,6 +307,8 @@ checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, fr
 #+++++
 println("\n", simulation,
         "\n",)
+if has_cuda() run(`nvidia-smi`) end
+
 
 @printf("---> Starting run!\n")
 run!(simulation, pickup=true)
@@ -291,4 +316,3 @@ run!(simulation, pickup=true)
 using Oceananigans.OutputWriters: write_output!
 write_output!(checkpointer, model)
 #-----
-

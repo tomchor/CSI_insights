@@ -3,6 +3,7 @@ Pkg.instantiate()
 using ArgParse
 using Printf
 using Oceananigans
+@info "Loaded Oceananigans"
 using Oceananigans.Units
 using Oceananigans.Advection: WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
@@ -39,6 +40,7 @@ factor = args["factor"]
 arch = eval(Meta.parse(args["arch"]*"()"))
 fullname = args["fullname"]
 
+
 setup, jet = split(fullname, "_")
 ndims = parse(Int, strip(setup, ['S', 'd']))
 jet = Symbol(jet)
@@ -60,11 +62,11 @@ end
 as_background=false
 include("jetinfo.jl")
 
-if ndims==3
+if ndims==3 # 3D LES simulation
     simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7), jet)
     prefix = "PNN"
     LES = true
-else
+else # 2D DNS simulation
     simulation_nml = getproperty(SurfaceJetSimulations(), jet)
     prefix = "FNN"
     LES = false
@@ -177,7 +179,6 @@ bbc = TracerBoundaryConditions(grid,
 #++++
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
 @inline mask2nd(X) = heaviside(X) * X^2
-@inline mask3rd(X) = heaviside(X) * (-2*X^3 + 3*X^2)
 const frac = sponge_frac
 
 function bottom_mask(x, y, z)
@@ -210,13 +211,15 @@ end
 #-----
 
 
+
 # Set up ICs and/or Background Fields
 #++++
 const kick = 0
 if as_background
     println("\nSetting geostrophic jet as BACKGROUND\n")
-    u_ic(x, y, z) = 0 #+ kick*randn()
-    v_ic(x, y, z) = 0 #+ kick*randn()
+    u_ic(x, y, z) = + kick*randn()
+    v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = + 1e-8*randn()
 
     bg_fields = (u=u_g, b=b_g,)
@@ -224,6 +227,7 @@ else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
     v_ic(x, y, z) = + kick*randn()
+    w_ic(x, y, z) = + kick*randn()
     b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
 
     bg_fields = NamedTuple()
@@ -245,7 +249,7 @@ model_kwargs = (architecture = arch,
                 grid = grid,
                 advection = WENO5(),
                 timestepper = :RungeKutta3,
-                coriolis = FPlane(f=f0),
+                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f0), # do we want sloshing?
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
@@ -259,7 +263,7 @@ println("\n", model, "\n")
 
 # Adding the ICs
 #++++
-set!(model, u=u_ic, v=v_ic, b=b_ic)
+set!(model, u=u_ic, v=v_ic, w=w_ic, b=b_ic)
 
 v̄ = sum(model.velocities.v.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
 model.velocities.v.data.parent .-= v̄
@@ -269,20 +273,25 @@ model.velocities.v.data.parent .-= v̄
 # Define time-stepping
 #++++
 u_scale = abs(u₀)
-Δt = 1/5 * min(grid.Δx, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.8,
-                        diffusive_cfl=0.5,
+Δt = 1/2 * min(grid.Δz, grid.Δy) / u_scale
+wizard = TimeStepWizard(cfl=0.9,
+                        diffusive_cfl=0.9,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
 
 
 # Finally define Simulation!
 #++++
+if ndims==3 # 3D LES simulation
+    stop_time = min(10*T_inertial, 20days)
+else # 2D DNS simulation
+    stop_time = min(3*T_inertial, 20days)
+end
 include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
-                        stop_time=10*T_inertial,
+                        stop_time=stop_time,
                         wall_time_limit=23.5hours,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
@@ -302,6 +311,8 @@ checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, fr
 #+++++
 println("\n", simulation,
         "\n",)
+if has_cuda() run(`nvidia-smi`) end
+
 
 @printf("---> Starting run!\n")
 run!(simulation, pickup=true)
