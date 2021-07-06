@@ -113,13 +113,13 @@ end
               f0 = f0,
               u₀ = -0.2, # m/s
               N2_inf = 1e-5, # 1/s²
-              Ny = Ny,
-              Nz = Nz,
-              Ly = Ly,
+              Ny = 100*2^9,
+              Nz = 2^9,
+              Ly = 8000,
               Lz = Lz,
               σy = 1600, # m
               σz = 50, # m
-              y₀ = +Ly/2, # m
+              y₀ = +8000/2, # m
               z₀ = 0, # m
               N2_pyc = 1e-5,
               νz = νz,
