@@ -11,8 +11,8 @@ using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceananigans.Grids: Center, Face
 
 using Oceanostics: KineticEnergy, 
-                   IsotropicViscousDissipationRate, IsotropicPseudoViscousDissipationRate,
-                   AnisotropicViscousDissipationRate, AnisotropicPseudoViscousDissipationRate,
+                   IsotropicViscousDissipationRate,
+                   AnisotropicPseudoViscousDissipationRate,
                    YPressureRedistribution, ZPressureRedistribution,
                    YShearProduction, ZShearProduction
 
@@ -139,7 +139,6 @@ function get_outputs_tuple(model; LES=false)
     mask_u = Oceananigans.Fields.FunctionField{Face, Center, Center}(full_mask, model.grid)
     mask_v = Oceananigans.Fields.FunctionField{Center, Face, Center}(full_mask, model.grid)
     mask_w = Oceananigans.Fields.FunctionField{Center, Center, Face}(full_mask, model.grid)
-
     #----
 
 
@@ -153,11 +152,9 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         ε = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
-        ε2 = IsotropicPseudoViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
         χ = IsotropicBuoyancyVarianceDissipationRate(model, b, κₑ, data=ccc_scratch.data)
     else
-        ε = AnisotropicViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
-        ε2 = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
+        ε = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
         χ = AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz, data=ccc_scratch.data)
     end
 
@@ -196,7 +193,6 @@ function get_outputs_tuple(model; LES=false)
                ω_x=ComputedField(ω_x, data=cff_scratch.data),
                tke=tke,
                ε=ε,
-               ε2=ε2,
                χ=χ,
                PV_ver=PV_ver,
                PV_hor=PV_hor,

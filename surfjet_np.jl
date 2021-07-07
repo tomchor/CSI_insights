@@ -177,27 +177,20 @@ bbc = TracerBoundaryConditions(grid,
 
 # Set-up sponge layer
 #++++
+const η = Int32(2)
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
-@inline mask2nd(X) = heaviside(X) * X^2
+@inline mask2nd(X) = heaviside(X) * X^η
 const frac = sponge_frac
 
-function bottom_mask(x, y, z)
-    z₁ = -Hz; z₀ = z₁ + Hz*frac
-    return mask2nd((z - z₀)/(z₁ - z₀))
-end
-function top_mask(x, y, z)
-    z₁ = +Hz; z₀ = z₁ - Hz*frac
-    return mask2nd((z - z₀)/(z₁ - z₀))
-end
-function north_mask(x, y, z)
+@inline function north_mask(x, y, z)
     y₁ = Hy; y₀ = y₁ - Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-function south_mask(x, y, z)
+@inline function south_mask(x, y, z)
     y₁ = 0; y₀ = y₁ + Hy*frac
     return mask2nd((y - y₀)/(y₁ - y₀))
 end
-full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)# + bottom_mask(x, y, z)
+@inline full_mask(x, y, z) = north_mask(x, y, z) + south_mask(x, y, z)
 
 const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
