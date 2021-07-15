@@ -56,6 +56,7 @@ end
     N2_pyc = 1e-6 # 1/s²
     νz=5e-4
     sponge_frac = 1/16
+    ThreeD = false
 
     CIjet1 = (name = "CIsurfjet1",
               f0 = f0,
@@ -113,8 +114,8 @@ end
               f0 = f0,
               u₀ = -0.2, # m/s
               N2_inf = 1e-5, # 1/s²
-              Ny = 100*2^9,
-              Nz = 2^9,
+              Ny = ThreeD ? Ny : 100*2^9,
+              Nz = ThreeD ? Nz : 2^9,
               Ly = 8000,
               Lz = Lz,
               σy = 1600, # m
@@ -167,8 +168,8 @@ end
               f0 = f0,
               u₀ = -0.2,
               N2_inf = 1e-6,
-              Ny = 100*2^9,
-              Nz = 2^9,
+              Ny = ThreeD ? Ny : 100*2^9,
+              Nz = ThreeD ? Nz : 2^9,
               Ly = 8000,
               Lz = Lz,
               σy = 1600,
@@ -220,7 +221,7 @@ end
 
 
 
-    Stabjet1 = (name = "stabsurfjet1",
+    Stabjet1 = (name = "Stabsurfjet1",
                 f0 = f0,
                 u₀ = -0.08,
                 N2_inf = 1e-5,
@@ -238,7 +239,7 @@ end
                 )
 
 
-    Sloshjet1 = (name = "sloshsurfjet1",
+    Sloshjet1 = (name = "Sloshsurfjet1",
                 f0 = f0,
                 u₀ = -0.08,
                 N2_inf = 1e-5,
