@@ -30,7 +30,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet1"
+            default = "S2d_SIjet1_AMD"
             arg_type = String
     end
     return parse_args(settings)
@@ -41,7 +41,13 @@ arch = eval(Meta.parse(args["arch"]*"()"))
 fullname = args["fullname"]
 
 
-setup, jet = split(fullname, "_")
+try
+    global setup, jet, extra = split(fullname, "_")
+    global AMD = extra=="AMD" ? true : false
+catch e
+    global setup, jet = split(fullname, "_")
+    global AMD = false
+end
 ndims = parse(Int, strip(setup, ['S', 'd']))
 jet = Symbol(jet)
 
@@ -63,7 +69,7 @@ as_background=false
 include("jetinfo.jl")
 
 if ndims==3 # 3D LES simulation
-    simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7), jet)
+    simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7, ThreeD=true), jet)
     prefix = "PNN"
     LES = true
 else # 2D DNS simulation
@@ -73,7 +79,11 @@ else # 2D DNS simulation
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-simname = "$(prefix)_$(name)"
+if AMD
+    simname = "$(prefix)_$(name)_AMD"
+else
+    simname = "$(prefix)_$(name)"
+end
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
@@ -177,9 +187,8 @@ bbc = TracerBoundaryConditions(grid,
 
 # Set-up sponge layer
 #++++
-const η = Int32(2)
 @inline heaviside(X) = ifelse(X < 0, zero(X), one(X))
-@inline mask2nd(X) = heaviside(X) * X^η
+@inline mask2nd(X) = heaviside(X) * X^2
 const frac = sponge_frac
 
 @inline function north_mask(x, y, z)
@@ -232,8 +241,11 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
-    closure = SmagorinskyLilly(C=0.16)
-    #closure = AnisotropicMinimumDissipation()
+    if AMD
+        closure = AnisotropicMinimumDissipation()
+    else
+        closure = SmagorinskyLilly(C=0.16)
+    end
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
