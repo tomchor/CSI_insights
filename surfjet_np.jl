@@ -30,7 +30,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet1_AMD"
+            default = "S2d_SIjet1"
             arg_type = String
     end
     return parse_args(settings)
@@ -42,11 +42,13 @@ fullname = args["fullname"]
 
 
 try
-    global setup, jet, extra = split(fullname, "_")
-    global AMD = extra=="AMD" ? true : false
+    global setup, jet, modifier = split(fullname, "_")
+    global AMD = modifier=="AMD" ? true : false
+    global noflux = modifier=="NF" ? true : false
 catch e
     global setup, jet = split(fullname, "_")
     global AMD = false
+    global noflux = false
 end
 ndims = parse(Int, strip(setup, ['S', 'd']))
 jet = Symbol(jet)
@@ -79,8 +81,8 @@ else # 2D DNS simulation
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-if AMD
-    simname = "$(prefix)_$(name)_AMD"
+if @isdefined modifier
+    simname = "$(prefix)_$(name)_$(modifier)"
 else
     simname = "$(prefix)_$(name)"
 end
@@ -157,15 +159,15 @@ b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + backgr
 # Setting BCs
 #++++
 if as_background
-    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
-    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
-    U_top_bc = GradientBoundaryCondition(surface_grad)
-    U_bot_bc = GradientBoundaryCondition(bottom_grad)
-    B_bc = GradientBoundaryCondition(0)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     U_top_bc = FluxBoundaryCondition(0)
     U_bot_bc = FluxBoundaryCondition(0)
-    B_bc = GradientBoundaryCondition(N2_inf)
+    if noflux
+        B_bc = GradientBoundaryCondition(0)
+    else
+        B_bc = GradientBoundaryCondition(N2_inf)
+    end
 end
 
 ubc = UVelocityBoundaryConditions(grid, 
@@ -204,7 +206,7 @@ end
 const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
@@ -218,13 +220,7 @@ end
 #++++
 const kick = 0
 if as_background
-    println("\nSetting geostrophic jet as BACKGROUND\n")
-    u_ic(x, y, z) = + kick*randn()
-    v_ic(x, y, z) = + kick*randn()
-    w_ic(x, y, z) = + kick*randn()
-    b_ic(x, y, z) = + 1e-8*randn()
-
-    bg_fields = (u=u_g, b=b_g,)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
