@@ -164,7 +164,7 @@ else
     U_top_bc = FluxBoundaryCondition(0)
     U_bot_bc = FluxBoundaryCondition(0)
     if noflux
-        B_bc = GradientBoundaryCondition(0)
+        B_bc = FluxBoundaryCondition(0)
     else
         B_bc = GradientBoundaryCondition(N2_inf)
     end
