@@ -233,7 +233,7 @@ function construct_outputs(model, simulation;
                            )
 
     #++++ Check for checkpoints
-    if any(startswith("chk.$simname"), readdir("data"))
+    if any(startswith("chk.$(simname)_iteration"), readdir("data"))
         @info "Checkpoint for $simname found. Assuming this is a pick-up simulation! Setting mode to append."
         mode = "a"
     else
