@@ -212,15 +212,15 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-const kick = 0
+const amplitude = 5e-6
 if as_background
     throw(ArgumentError("background isn't used anymore!"))
 else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
-    u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
-    v_ic(x, y, z) = + kick*randn()
-    w_ic(x, y, z) = + kick*randn()
-    b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
+    u_ic(x, y, z) = u_g(x, y, z, 0) + amplitude*randn()
+    v_ic(x, y, z) = + amplitude*randn()
+    w_ic(x, y, z) = + amplitude*randn()
+    b_ic(x, y, z) = b_g(x, y, z, 0) #+ 1e-8*randn()
 
     bg_fields = NamedTuple()
 end
