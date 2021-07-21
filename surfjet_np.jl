@@ -157,11 +157,7 @@ b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + backgr
 # Setting BCs
 #++++
 if as_background
-    @inline surface_grad(x, y, t) = -dudz_g(x, y, 0, t)
-    @inline bottom_grad(x, y, t) = -dudz_g(x, y, -Hz, t)
-    U_top_bc = GradientBoundaryCondition(surface_grad)
-    U_bot_bc = GradientBoundaryCondition(bottom_grad)
-    B_bc = GradientBoundaryCondition(0)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     U_top_bc = FluxBoundaryCondition(0)
     U_bot_bc = FluxBoundaryCondition(0)
@@ -204,7 +200,7 @@ end
 const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 if as_background
-    forcing = (u=full_sponge_0, v=full_sponge_0, w=full_sponge_0)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
     full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
@@ -218,13 +214,7 @@ end
 #++++
 const kick = 0
 if as_background
-    println("\nSetting geostrophic jet as BACKGROUND\n")
-    u_ic(x, y, z) = + kick*randn()
-    v_ic(x, y, z) = + kick*randn()
-    w_ic(x, y, z) = + kick*randn()
-    b_ic(x, y, z) = + 1e-8*randn()
-
-    bg_fields = (u=u_g, b=b_g,)
+    throw(ArgumentError("background isn't used anymore!"))
 else
     println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
@@ -241,10 +231,11 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
+    νₘ, κₘ = 1.0e-6, 1.5e-7
     if AMD
-        closure = AnisotropicMinimumDissipation()
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ)
     else
-        closure = SmagorinskyLilly(C=0.16)
+        closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ)
     end
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity

@@ -105,11 +105,7 @@ b = model.tracers.b
 p = sum(model.pressures)
 
 if as_background
-    U, V, W = model.background_fields.velocities
-    B = model.background_fields.tracers.b
-
-    u_tot = u + U
-    b_tot = b + B
+    throw(ArgumentError("background isn't used anymore!"))
 else
     U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
     B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
@@ -205,8 +201,7 @@ function get_outputs_tuple(model; LES=false)
         outputs = merge(outputs, (ν_e=νₑ,))
     end
     if as_background
-        outputs = merge(outputs, (u_tot=ComputedField(u_tot, data=fcc_scratch.data),
-                                  b_tot=ComputedField(b_tot, data=ccc_scratch.data),))
+        throw(ArgumentError("background isn't used anymore!"))
     end
     #----
 
@@ -238,7 +233,7 @@ function construct_outputs(model, simulation;
                            )
 
     #++++ Check for checkpoints
-    if any(startswith("chk.$simname"), readdir("data"))
+    if any(startswith("chk.$(simname)_iteration"), readdir("data"))
         @info "Checkpoint for $simname found. Assuming this is a pick-up simulation! Setting mode to append."
         mode = "a"
     else
