@@ -112,7 +112,11 @@ b_tot = b
 
 if LES
     νₑ = νz = model.diffusivities.νₑ
-    κₑ = κz = model.diffusivities.νₑ # Assumes Pr=1
+    if AMD
+        κₑ = κz = model.diffusivities.κₑ.b
+    else
+        κₑ = κz = ComputedField(model.diffusivities.κₑ.b)
+    end
 else
     if model.closure isa IsotropicDiffusivity
         νx = νy = νz = model.closure.ν
@@ -194,7 +198,7 @@ function get_outputs_tuple(model; LES=false)
                )
     
     if LES
-        outputs = merge(outputs, (ν_e=νₑ,))
+        outputs = merge(outputs, (ν_e=νₑ, κ_e=κₑ))
     end
     #----
 
