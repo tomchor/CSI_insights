@@ -104,15 +104,11 @@ u, v, w = model.velocities
 b = model.tracers.b
 p = sum(model.pressures)
 
-if as_background
-    throw(ArgumentError("background isn't used anymore!"))
-else
-    U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
-    B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
+U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
+B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
 
-    u_tot = u
-    b_tot = b
-end
+u_tot = u
+b_tot = b
 
 if LES
     νₑ = νz = model.diffusivities.νₑ
@@ -199,9 +195,6 @@ function get_outputs_tuple(model; LES=false)
     
     if LES
         outputs = merge(outputs, (ν_e=νₑ,))
-    end
-    if as_background
-        throw(ArgumentError("background isn't used anymore!"))
     end
     #----
 

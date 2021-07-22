@@ -67,7 +67,6 @@ end
 
 # Get simulation parameters
 #++++
-as_background=false
 include("jetinfo.jl")
 
 if ndims==3 # 3D LES simulation
@@ -153,16 +152,12 @@ b_g(x, y, z, t) = -f₀ * u₀ * bmask((y-y₀)/sig_y, ((z-z₀)/sig_z +1)) + ba
 
 # Setting BCs
 #++++
-if as_background
-    throw(ArgumentError("background isn't used anymore!"))
+U_top_bc = FluxBoundaryCondition(0)
+U_bot_bc = FluxBoundaryCondition(0)
+if noflux
+    B_bc = FluxBoundaryCondition(0)
 else
-    U_top_bc = FluxBoundaryCondition(0)
-    U_bot_bc = FluxBoundaryCondition(0)
-    if noflux
-        B_bc = FluxBoundaryCondition(0)
-    else
-        B_bc = GradientBoundaryCondition(N2_inf)
-    end
+    B_bc = GradientBoundaryCondition(N2_inf)
 end
 
 ubc = FieldBoundaryConditions(top = U_top_bc,
@@ -196,13 +191,10 @@ end
 
 const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
-if as_background
-    throw(ArgumentError("background isn't used anymore!"))
-else
-    full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
-    full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
-    forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
-end
+full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
+full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
+forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
+
 #-----
 
 
@@ -210,17 +202,12 @@ end
 # Set up ICs and/or Background Fields
 #++++
 const amplitude = 1e-6
-if as_background
-    throw(ArgumentError("background isn't used anymore!"))
-else
-    println("\nSetting geostrophic jet as an INITIAL CONDITION\n")
-    u_ic(x, y, z) = u_g(x, y, z, 0) + amplitude*randn()
-    v_ic(x, y, z) = + amplitude*randn()
-    w_ic(x, y, z) = + amplitude*randn()
-    b_ic(x, y, z) = b_g(x, y, z, 0) #+ 1e-8*randn()
+u_ic(x, y, z) = u_g(x, y, z, 0) + amplitude*randn()
+v_ic(x, y, z) = + amplitude*randn()
+w_ic(x, y, z) = + amplitude*randn()
+b_ic(x, y, z) = b_g(x, y, z, 0) #+ 1e-8*randn()
 
-    bg_fields = NamedTuple()
-end
+bg_fields = NamedTuple()
 #-----
 
 
