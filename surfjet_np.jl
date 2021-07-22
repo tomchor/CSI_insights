@@ -24,9 +24,8 @@ function parse_command_line_arguments()
             arg_type = Int
 
         "--arch"
-            help = "CPU or GPU"
-            default = "GPU"
-            arg_type = String
+            help = "CPU or GPU or nothing"
+            default = nothing
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
@@ -37,8 +36,12 @@ function parse_command_line_arguments()
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
-arch = eval(Meta.parse(args["arch"]*"()"))
 fullname = args["fullname"]
+if args["arch"]==nothing
+    arch = has_cuda() ? GPU() : CPU()
+else
+    arch = eval(Meta.parse(args["arch"]*"()"))
+end
 
 
 try
@@ -57,15 +60,11 @@ if ndims ∉ [2,3] # Validade input
     throw(AssertionError("Dimensions must be 2 or 3"))
 end
 
-@printf("Starting %sd jet %s with a dividing factor of %d and a %s architecture\n", 
-        ndims,
-        jet,
-        factor,
-        arch,)
+@info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n", 
 #-----
 
 
-# Get simulation parameters
+# Get primary simulation parameters
 #++++
 include("jetinfo.jl")
 
@@ -78,7 +77,7 @@ else # 2D DNS simulation
     prefix = "FNN"
     LES = false
 end
-@unpack name, f_0, u_0, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σ_y, σ_z, y_0, z_0, νz, sponge_frac = simulation_nml
+@unpack name, f_0, u_0, N2_inf, Ny, Nz, Ly, Lz, σ_y, σ_z, y_0, z_0, νz, sponge_frac = simulation_nml
 
 if @isdefined modifier
     simname = "$(prefix)_$(name)_$(modifier)"
@@ -194,7 +193,6 @@ full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
 full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
 forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
-
 #-----
 
 
@@ -206,8 +204,6 @@ u_ic(x, y, z) = u_g(x, y, z, 0) + amplitude*randn()
 v_ic(x, y, z) = + amplitude*randn()
 w_ic(x, y, z) = + amplitude*randn()
 b_ic(x, y, z) = b_g(x, y, z, 0) #+ 1e-8*randn()
-
-bg_fields = NamedTuple()
 #-----
 
 
@@ -225,18 +221,17 @@ else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
-model_kwargs = (architecture = arch,
-                grid = grid,
-                advection = WENO5(),
-                timestepper = :RungeKutta3,
-                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f₀), # do we want sloshing?
-                tracers = (:b,),
-                buoyancy = BuoyancyTracer(),
-                boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
-                forcing = forcing,
-                background_fields = bg_fields,
-                )
-model = NonhydrostaticModel(; model_kwargs..., closure=closure)
+model = NonhydrostaticModel(architecture = arch,
+                            grid = grid,
+                            advection = WENO5(),
+                            timestepper = :RungeKutta3,
+                            coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f₀), # do we want sloshing?
+                            tracers = (:b,),
+                            buoyancy = BuoyancyTracer(),
+                            boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
+                            forcing = forcing,
+                            closure=closure,
+                            )
 println("\n", model, "\n")
 #-----
 
@@ -277,7 +272,6 @@ simulation = Simulation(model, Δt=wizard,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 @info simulation
-pause
 #-----
 
 
