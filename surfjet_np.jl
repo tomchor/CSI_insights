@@ -25,7 +25,7 @@ function parse_command_line_arguments()
 
         "--arch"
             help = "CPU or GPU"
-            default = "CPU"
+            default = "GPU"
             arg_type = String
 
         "--fullname"
@@ -79,7 +79,7 @@ else # 2D DNS simulation
     prefix = "FNN"
     LES = false
 end
-@unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
+@unpack name, f_0, u_0, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σ_y, σ_z, y_0, z_0, νz, sponge_frac = simulation_nml
 
 if @isdefined modifier
     simname = "$(prefix)_$(name)_$(modifier)"
@@ -105,26 +105,26 @@ grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
                               y=(0, Ly),
                               z=(-Lz, 0), 
                               topology=topology)
-println("\n", grid, "\n")
+@info grid
 #-----
 
 
 # Calculate secondary parameters
 #++++
-b₀ = u₀ * f0
+b₀ = u_0 * f_0
 ρ₀ = 1027
-T_inertial = 2*π/f0
-y_r = y₀ + √2/4 * σy
+T_inertial = 2*π/f_0
+y_r = y_0 + √2/4 * σ_y
 z_r = 0
-Ro_r = - √2 * u₀ * (z₀/σz-1) * exp(-1/8) / (2*f0*σy)
-Ri_r = N2_inf * σz^2 * exp(1/4) / u₀^2
+Ro_r = - √2 * u_0 * (z_0/σ_z-1) * exp(-1/8) / (2*f_0*σ_y)
+Ri_r = N2_inf * σ_z^2 * exp(1/4) / u_0^2
 νh = νz * (grid.Δy / grid.Δz)^(4/3)
 
-secondary_params = merge((LES=Int(LES), u_0=u₀, y_0=y₀, z_0=z₀, b0=b₀), 
+secondary_params = merge((LES=Int(LES), u₀=u_0, y₀=y_0, z₀=z_0, b0=b₀), 
                          (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
 
 global_attributes = merge(simulation_nml, secondary_params)
-println("\n", global_attributes, "\n")
+@info "global_attributes = $global_attributes"
 #-----
 
 
@@ -135,25 +135,25 @@ const n2_inf = N2_inf
 const n2_pyc = N2_pyc
 const Hz = grid.Lz
 const Hy = grid.Ly
-const sig_z = σz
-const sig_y = σy
-const u_0 = u₀
-const y_0 = y₀
-const z_0 = z₀
-const z_c = -40
-const z_m = z_c - n2_pyc/n2_inf*(z_c+Hz)
-const f_0 = f0
+const sig_z = σ_z
+const sig_y = σ_y
+const u₀ = u_0
+const y₀ = y_0
+const z₀ = z_0
+const zᵪ = -40 # Matching of the pycnocline
+const zₘ = zᵪ - n2_pyc/n2_inf*(zᵪ+Hz) # Maching of the pycnocline
+const f₀ = f_0
 @inline fy(ψ) = exp(-ψ^2)
 @inline intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
 @inline umask(Y, Z) = Z * fy(Y)
 @inline bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
 
-u_g(x, y, z, t) = +u_0 * umask((y-y_0)/sig_y, ((z-z_0)/sig_z +1))
-@inline background_strat(z) = ifelse(z < z_c, 
+u_g(x, y, z, t) = +u₀ * umask((y-y₀)/sig_y, ((z-z₀)/sig_z +1))
+@inline background_strat(z) = ifelse(z < zᵪ, 
                              n2_pyc * (z+Hz),
-                             n2_inf * (z-z_m))
-b_g(x, y, z, t) = -f_0 * u_0 * bmask((y-y_0)/sig_y, ((z-z_0)/sig_z +1)) + background_strat(z)
-@inline dudz_g(x, y, z, t) = +u_0 * (1/sig_z) * fy((y-y_0)/sig_y)
+                             n2_inf * (z-zₘ))
+b_g(x, y, z, t) = -f₀ * u₀ * bmask((y-y₀)/sig_y, ((z-z₀)/sig_z +1)) + background_strat(z)
+@inline dudz_g(x, y, z, t) = +u₀ * (1/sig_z) * fy((y-y₀)/sig_y)
 #-----
 
 # Setting BCs
@@ -247,7 +247,7 @@ model_kwargs = (architecture = arch,
                 grid = grid,
                 advection = WENO5(),
                 timestepper = :RungeKutta3,
-                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f0), # do we want sloshing?
+                coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f₀), # do we want sloshing?
                 tracers = (:b,),
                 buoyancy = BuoyancyTracer(),
                 boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
@@ -294,7 +294,8 @@ simulation = Simulation(model, Δt=wizard,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
-println("\n", simulation, "\n")
+@info simulation
+pause
 #-----
 
 

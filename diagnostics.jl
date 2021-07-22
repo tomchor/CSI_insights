@@ -161,11 +161,11 @@ function get_outputs_tuple(model; LES=false)
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
                                  computed_dependencies=(u_tot, v, b_tot), 
-                                 parameters=f_0, data=fff_scratch.data)
+                                 parameters=f₀, data=fff_scratch.data)
     
     PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
                                  computed_dependencies=(u_tot, v, w, b_tot), 
-                                 parameters=f_0, data=fff_scratch.data)
+                                 parameters=f₀, data=fff_scratch.data)
     
     dvpdy_ρ = YPressureRedistribution(model, v, p, ρ₀, data=ccc_scratch.data)
     dwpdz_ρ = ZPressureRedistribution(model, w, p, ρ₀, data=ccc_scratch.data)
