@@ -118,8 +118,7 @@ Ro_r = - √2 * u_0 * (z_0/σ_z-1) * exp(-1/8) / (2*f_0*σ_y)
 Ri_r = N2_inf * σ_z^2 * exp(1/4) / u_0^2
 νh = νz * (grid.Δy / grid.Δz)^(4/3)
 
-secondary_params = merge((LES=Int(LES), u₀=u_0, y₀=y_0, z₀=z_0, b0=b₀), 
-                         (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
+secondary_params = merge((LES=Int(LES), ρ_0=ρ₀, b_0=b₀,), (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
 
 global_attributes = merge(simulation_nml, secondary_params)
 @info "global_attributes = $global_attributes"
@@ -146,7 +145,6 @@ const f₀ = f_0
 u_g(x, y, z, t) = +u₀ * umask((y-y₀)/sig_y, ((z-z₀)/sig_z +1))
 @inline background_strat(z) = n2_inf * (z+Hz)
 b_g(x, y, z, t) = -f₀ * u₀ * bmask((y-y₀)/sig_y, ((z-z₀)/sig_z +1)) + background_strat(z)
-@inline dudz_g(x, y, z, t) = +u₀ * (1/sig_z) * fy((y-y₀)/sig_y)
 #-----
 
 # Setting BCs
@@ -241,7 +239,9 @@ println("\n", model, "\n")
 set!(model, u=u_ic, v=v_ic, w=w_ic, b=b_ic)
 
 v̄ = sum(model.velocities.v.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
+w̄ = sum(model.velocities.w.data.parent) / (grid.Nx * grid.Ny * grid.Nz)
 model.velocities.v.data.parent .-= v̄
+model.velocities.w.data.parent .-= w̄
 #-----
 
 
