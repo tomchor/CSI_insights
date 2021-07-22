@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #PBS -A UMCP0012
-#PBS -N S3d_SIjet4_AMD
+#PBS -N S3d_CIjet1_NF
 #PBS -k eod
-#PBS -o logs/S3d_SIjet4_AMD.out
-#PBS -e logs/S3d_SIjet4_AMD.err
+#PBS -o logs/S3d_CIjet1_NF.out
+#PBS -e logs/S3d_CIjet1_NF.err
 #PBS -l walltime=24:00:00
 #PBS -q casper
 #PBS -l select=1:ncpus=1:ngpus=1
@@ -23,5 +23,5 @@ module li
 export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
 
 peak_memusage.exe julia --project \
-    surfjet_np.jl --fullname=S3d_SIjet4_AMD --arch=GPU --factor=1 2>&1 | tee out/S3d_SIjet4_AMD.out
+    surfjet_np.jl --fullname=S3d_CIjet1_NF --arch=GPU --factor=2 2>&1 | tee out/S3d_CIjet1_NF.out
 

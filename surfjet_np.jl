@@ -71,7 +71,7 @@ as_background=false
 include("jetinfo.jl")
 
 if ndims==3 # 3D LES simulation
-    simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7, ThreeD=true), jet)
+    simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^8, ThreeD=true), jet)
     prefix = "PNN"
     LES = true
 else # 2D DNS simulation
@@ -219,6 +219,9 @@ end
 # Set up ICs and/or Background Fields
 #++++
 const kick = 0
+@inline masky(y) = heaviside(+y - Hy/6) - heaviside(+y - 5*Hy/6)
+@inline maskz(z) = heaviside(-z - Hz/6) - heaviside(-z - 5*Hz/6)
+@inline noise_mask(y, z) = masky(y) * maskz(z)
 if as_background
     throw(ArgumentError("background isn't used anymore!"))
 else
@@ -226,7 +229,7 @@ else
     u_ic(x, y, z) = u_g(x, y, z, 0) + kick*randn()
     v_ic(x, y, z) = + kick*randn()
     w_ic(x, y, z) = + kick*randn()
-    b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()
+    b_ic(x, y, z) = b_g(x, y, z, 0) + 1e-8*randn()*noise_mask(y, z)
 
     bg_fields = NamedTuple()
 end
@@ -237,10 +240,11 @@ end
 #++++
 if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
+    νₘ, κₘ = 0, 0
     if AMD
-        closure = AnisotropicMinimumDissipation()
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ)
     else
-        closure = SmagorinskyLilly(C=0.16)
+        closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ)
     end
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
@@ -284,7 +288,7 @@ wizard = TimeStepWizard(cfl=0.9,
 # Finally define Simulation!
 #++++
 if ndims==3 # 3D LES simulation
-    stop_time = min(10*T_inertial, 20days)
+    stop_time = min(2*T_inertial, 20days)
 else # 2D DNS simulation
     stop_time = min(3*T_inertial, 20days)
 end
