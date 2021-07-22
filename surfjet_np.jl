@@ -30,7 +30,7 @@ function parse_command_line_arguments()
 
         "--fullname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet1_AMD"
+            default = "S2d_SIjet1"
             arg_type = String
     end
     return parse_args(settings)
@@ -42,11 +42,13 @@ fullname = args["fullname"]
 
 
 try
-    global setup, jet, extra = split(fullname, "_")
-    global AMD = extra=="AMD" ? true : false
+    global setup, jet, modifier = split(fullname, "_")
+    global AMD = modifier=="AMD" ? true : false
+    global noflux = modifier=="NF" ? true : false
 catch e
     global setup, jet = split(fullname, "_")
     global AMD = false
+    global noflux = false
 end
 ndims = parse(Int, strip(setup, ['S', 'd']))
 jet = Symbol(jet)
@@ -79,8 +81,8 @@ else # 2D DNS simulation
 end
 @unpack name, f0, u₀, N2_inf, N2_pyc, Ny, Nz, Ly, Lz, σy, σz, y₀, z₀, νz, sponge_frac = simulation_nml
 
-if AMD
-    simname = "$(prefix)_$(name)_AMD"
+if @isdefined modifier
+    simname = "$(prefix)_$(name)_$(modifier)"
 else
     simname = "$(prefix)_$(name)"
 end
@@ -161,7 +163,11 @@ if as_background
 else
     U_top_bc = FluxBoundaryCondition(0)
     U_bot_bc = FluxBoundaryCondition(0)
-    B_bc = GradientBoundaryCondition(N2_inf)
+    if noflux
+        B_bc = FluxBoundaryCondition(0)
+    else
+        B_bc = GradientBoundaryCondition(N2_inf)
+    end
 end
 
 ubc = UVelocityBoundaryConditions(grid, 
@@ -212,7 +218,7 @@ end
 
 # Set up ICs and/or Background Fields
 #++++
-const amplitude = 5e-6
+const amplitude = 1e-6
 if as_background
     throw(ArgumentError("background isn't used anymore!"))
 else
