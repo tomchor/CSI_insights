@@ -14,7 +14,6 @@ using Parameters
                f_0 = f_0,
                u_0 = 0.35e0,
                N2_inf = 4.9e-5,
-               N2_pyc = 4.9e-5,
                Ny = Ny,
                Nz = Nz,
                Ly = 5000,
@@ -31,7 +30,6 @@ using Parameters
                f_0 = f_0,
                u_0 = -0.4, # m/s
                N2_inf = 4e-5, # 1/s²
-               N2_pyc = 4e-5, # 1/s²
                Ny = three_d ? Ny : 28*2^9,
                Nz = three_d ? Nz : 2^9,
                Ly = 12_000,
@@ -53,7 +51,6 @@ end
     Nz = 2^9
     Ly = 15_000 # m
     Lz = 80 # m
-    N2_pyc = 1e-6 # 1/s²
     νz=5e-4
     sponge_frac = 1/16
     ThreeD = false
@@ -62,7 +59,6 @@ end
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 1e-5,
-              N2_pyc = 1e-5,
               Ny = ThreeD ? Ny : 100*2^9,
               Nz = ThreeD ? Nz : 2^9,
               Ly = 8000,
@@ -79,7 +75,6 @@ end
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 5e-5,
-              N2_pyc = 5e-5,
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
@@ -96,7 +91,6 @@ end
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 5e-6,
-              N2_pyc = 5e-6,
               Ny = 2^15,
               Nz = 2^9,
               Ly = 15_000,
@@ -122,7 +116,6 @@ end
               σ_z = 50, # m
               y_0 = +8000/2, # m
               z_0 = 0, # m
-              N2_pyc = 1e-5,
               νz = νz,
               sponge_frac = sponge_frac,
               )
@@ -139,7 +132,6 @@ end
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              N2_pyc = 1e-6,
               νz = νz,
               sponge_frac = sponge_frac,
              )
@@ -157,7 +149,6 @@ end
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              N2_pyc = 1e-6,
               νz = 8e-4,
               sponge_frac = sponge_frac,
              )
@@ -176,7 +167,6 @@ end
               σ_z = 80,
               y_0 = +4000,
               z_0 = 0,
-              N2_pyc = 1e-6,
               νz = 5e-4,
               sponge_frac = sponge_frac,
              )
@@ -195,7 +185,6 @@ end
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              N2_pyc = 2.5e-7,
               νz = 1e-3,
               sponge_frac = sponge_frac,
               )
@@ -214,7 +203,6 @@ end
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              N2_pyc = 2.5e-6,
               νz = νz,
               sponge_frac = sponge_frac,
               )
@@ -233,7 +221,6 @@ end
                 σ_z = 80,
                 y_0 = +Ly/2,
                 z_0 = 0,
-                N2_pyc = 1e-5,
                 νz = νz,
                 sponge_frac = 1/32,
                 )
@@ -251,7 +238,6 @@ end
                 σ_z = 80,
                 y_0 = +Ly/2,
                 z_0 = 0,
-                N2_pyc = 1e-5,
                 νz = νz,
                 sponge_frac = 1/32,
                 )

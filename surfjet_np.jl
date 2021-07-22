@@ -132,7 +132,6 @@ global_attributes = merge(simulation_nml, secondary_params)
 # Set up Geostrophic flow
 #++++++
 const n2_inf = N2_inf
-const n2_pyc = N2_pyc
 const Hz = grid.Lz
 const Hy = grid.Ly
 const sig_z = σ_z
@@ -140,8 +139,6 @@ const sig_y = σ_y
 const u₀ = u_0
 const y₀ = y_0
 const z₀ = z_0
-const zᵪ = -40 # Matching of the pycnocline
-const zₘ = zᵪ - n2_pyc/n2_inf*(zᵪ+Hz) # Maching of the pycnocline
 const f₀ = f_0
 @inline fy(ψ) = exp(-ψ^2)
 @inline intgaussian(ψ) = √π/2 * (erf(ψ) + 1)
@@ -149,9 +146,7 @@ const f₀ = f_0
 @inline bmask(Y, Z) = (1/sig_z) * (sig_y * intgaussian(Y))
 
 u_g(x, y, z, t) = +u₀ * umask((y-y₀)/sig_y, ((z-z₀)/sig_z +1))
-@inline background_strat(z) = ifelse(z < zᵪ, 
-                             n2_pyc * (z+Hz),
-                             n2_inf * (z-zₘ))
+@inline background_strat(z) = n2_inf * (z+Hz)
 b_g(x, y, z, t) = -f₀ * u₀ * bmask((y-y₀)/sig_y, ((z-z₀)/sig_z +1)) + background_strat(z)
 @inline dudz_g(x, y, z, t) = +u₀ * (1/sig_z) * fy((y-y₀)/sig_y)
 #-----
