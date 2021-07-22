@@ -13,14 +13,15 @@
 
 # Clear the environment from any previously loaded modules
 module purge
-module load gnu
-module load cuda/11.0.3
+module load ncarenv/1.3 gnu/9.1.0 ncarcompilers/0.5.0
+module load netcdf/4.7.4 openmpi/4.1.0 julia/1.6.0
 module load peak_memusage
+module li
 
 #/glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
 export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
 
-peak_memusage.exe /glade/u/home/tomasc/repos/julia_1.5.2/julia --project \
+peak_memusage.exe julia --project \
     intjet_np.jl --fullname=I3d_CIjet01 --arch=GPU --factor=1 2>&1 | tee out/I3d_CIjet01.out
 
