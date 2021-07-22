@@ -170,20 +170,16 @@ else
     end
 end
 
-ubc = UVelocityBoundaryConditions(grid, 
-                                  top = U_top_bc,
-                                  bottom = U_bot_bc,
-                                  )
-vbc = VVelocityBoundaryConditions(grid, 
-                                  top = FluxBoundaryCondition(0),
-                                  bottom = FluxBoundaryCondition(0),
-                                  )
-wbc = WVelocityBoundaryConditions(grid, 
-                                  )
-bbc = TracerBoundaryConditions(grid, 
-                               bottom = B_bc,
-                               top = B_bc,
+ubc = FieldBoundaryConditions(top = U_top_bc,
+                              bottom = U_bot_bc,
+                              )
+vbc = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
+                              bottom = FluxBoundaryCondition(0),
                                )
+wbc = FieldBoundaryConditions()
+bbc = FieldBoundaryConditions(bottom = B_bc,
+                              top = B_bc,
+                              )
 #-----
 
 
@@ -258,7 +254,7 @@ model_kwargs = (architecture = arch,
                 forcing = forcing,
                 background_fields = bg_fields,
                 )
-model = IncompressibleModel(; model_kwargs..., closure=closure)
+model = NonhydrostaticModel(; model_kwargs..., closure=closure)
 println("\n", model, "\n")
 #-----
 
