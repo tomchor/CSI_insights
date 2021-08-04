@@ -69,7 +69,7 @@ end
 include("jetinfo.jl")
 
 if ndims==3 # 3D LES simulation
-    simulation_nml = getproperty(SurfaceJetSimulations(Ny=400*2^4, Nz=2^7, ThreeD=true), jet)
+    simulation_nml = getproperty(SurfaceJetSimulations(Ny=100*2^5, Nz=2^7, ThreeD=true), jet)
     prefix = "PNN"
     LES = true
 else # 2D DNS simulation
@@ -90,7 +90,7 @@ pickup = any(startswith("chk.$simname"), readdir("data"))
 # Set GRID
 #++++  GRID
 if ndims==3
-    Nx = Ny÷64
+    Nx = Ny÷16
     Lx = (Ly / Ny) * Nx
 else
     Nx = factor
