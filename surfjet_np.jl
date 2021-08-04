@@ -60,7 +60,7 @@ if ndims ∉ [2,3] # Validade input
     throw(AssertionError("Dimensions must be 2 or 3"))
 end
 
-@info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n", 
+@info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n"
 #-----
 
 
@@ -103,7 +103,7 @@ grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
                               y=(0, Ly),
                               z=(-Lz, 0), 
                               topology=topology)
-@info grid
+@info "" grid
 #-----
 
 
@@ -121,7 +121,7 @@ Ri_r = N2_inf * σ_z^2 * exp(1/4) / u_0^2
 secondary_params = merge((LES=Int(LES), ρ_0=ρ₀, b_0=b₀,), (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
 
 global_attributes = merge(simulation_nml, secondary_params)
-@info "global_attributes = $global_attributes"
+@info "" global_attributes
 #-----
 
 
@@ -157,16 +157,10 @@ else
     B_bc = GradientBoundaryCondition(N2_inf)
 end
 
-ubc = FieldBoundaryConditions(top = U_top_bc,
-                              bottom = U_bot_bc,
-                              )
-vbc = FieldBoundaryConditions(top = FluxBoundaryCondition(0),
-                              bottom = FluxBoundaryCondition(0),
-                               )
+ubc = FieldBoundaryConditions(top = U_top_bc, bottom = U_bot_bc,)
+vbc = FieldBoundaryConditions()
 wbc = FieldBoundaryConditions()
-bbc = FieldBoundaryConditions(bottom = B_bc,
-                              top = B_bc,
-                              )
+bbc = FieldBoundaryConditions(bottom = B_bc, top = B_bc,)
 #-----
 
 
@@ -189,7 +183,6 @@ end
 const rate = 1/10minutes
 full_sponge_0 = Relaxation(rate=rate, mask=full_mask, target=0)
 full_sponge_u = Relaxation(rate=rate, mask=full_mask, target=u_g)
-full_sponge_b = Relaxation(rate=rate, mask=full_mask, target=b_g)
 forcing = (u=full_sponge_u, v=full_sponge_0, w=full_sponge_0)
 #-----
 
@@ -271,7 +264,7 @@ simulation = Simulation(model, Δt=wizard,
                         iteration_interval=5,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
-@info simulation
+@info "" simulation
 #-----
 
 
