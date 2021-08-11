@@ -107,9 +107,6 @@ p = sum(model.pressures)
 U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, model.clock)
 B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
 
-u_tot = u
-b_tot = b
-
 if LES
     νₑ = νz = model.diffusivities.νₑ
     if AMD
@@ -140,7 +137,7 @@ function get_outputs_tuple(model; LES=false)
 
     # Start calculation of snapshot variables
     #++++
-    dbdz = @at (Center, Center, Face) ∂z(b_tot)
+    dbdz = @at (Center, Center, Face) ∂z(b)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
@@ -160,11 +157,11 @@ function get_outputs_tuple(model; LES=false)
     sponge_dissip = @at (Center, Center, Center) (u_dissip + v_dissip + w_dissip)
 
     PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
-                                 computed_dependencies=(u_tot, v, b_tot), 
+                                 computed_dependencies=(u, v, b), 
                                  parameters=f₀, data=fff_scratch.data)
     
     PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
-                                 computed_dependencies=(u_tot, v, w, b_tot), 
+                                 computed_dependencies=(u, v, w, b), 
                                  parameters=f₀, data=fff_scratch.data)
     
     dvpdy_ρ = YPressureRedistribution(model, v, p, ρ₀, data=ccc_scratch.data)
