@@ -1,5 +1,4 @@
 using Printf
-using KernelAbstractions: @index, @kernel
 using Statistics: mean
 import NCDatasets as NCD
 
@@ -15,82 +14,8 @@ using Oceanostics: KineticEnergy,
                    AnisotropicPseudoViscousDissipationRate,
                    YPressureRedistribution, ZPressureRedistribution,
                    YShearProduction, ZShearProduction
+using Oceanostics.FlowDiagnostics: ErtelPotentialVorticityᶠᶠᶠ
 
-
-#++++ KERNEL COMPUTED FIELDS
-
-#++++ PV components
-@kernel function ertel_potential_vorticity_vertical_fff!(PV, grid, u, v, b, f₀)
-    i, j, k = @index(Global, NTuple)
-
-    dVdx =  ℑzᵃᵃᶠ(i, j, k, grid, ∂xᶠᵃᵃ, v) # C, F, C  → F, F, C → F, F, F
-    dUdy =  ℑzᵃᵃᶠ(i, j, k, grid, ∂yᵃᶠᵃ, u) # F, C, C  → F, F, C → F, F, F
-    dbdz = ℑxyᶠᶠᵃ(i, j, k, grid, ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F → F, F, F
-    pv_z = (f₀ + dVdx - dUdy) * dbdz
-
-    @inbounds PV[i, j, k] = pv_z
-end
-
-
-
-@kernel function ertel_potential_vorticity_horizontal_fff!(PV, grid, u, v, w, b, f₀)
-    i, j, k = @index(Global, NTuple)
-
-    dWdy =  ℑxᶠᵃᵃ(i, j, k, grid, ∂yᵃᶠᵃ, w) # C, C, F  → C, F, F  → F, F, F
-    dVdz =  ℑxᶠᵃᵃ(i, j, k, grid, ∂zᵃᵃᶠ, v) # C, F, C  → C, F, F  → F, F, F
-    dbdx = ℑyzᵃᶠᶠ(i, j, k, grid, ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → F, F, F
-    pv_x = (dWdy - dVdz) * dbdx # F, F, F
-
-    dUdz =  ℑyᵃᶠᵃ(i, j, k, grid, ∂zᵃᵃᶠ, u) # F, C, C  → F, C, F → F, F, F
-    dWdx =  ℑyᵃᶠᵃ(i, j, k, grid, ∂xᶠᵃᵃ, w) # C, C, F  → F, C, F → F, F, F
-    dbdy = ℑxzᶠᵃᶠ(i, j, k, grid, ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C → F, F, F
-    pv_y = (dUdz - dWdx) * dbdy # F, F, F
-
-    @inbounds PV[i, j, k] = pv_x + pv_y
-end
-#----
-
-#+++++ Mixing of buoyancy
-@inline fψ²(i, j, k, grid, f, ψ) = @inbounds f(i, j, k, grid, ψ)^2
-
-@kernel function isotropic_buoyancy_variance_dissipation_rate_ccc!(mixing_rate, grid, b, κᵇ)
-    i, j, k = @index(Global, NTuple)
-    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
-    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
-    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
-
-    @inbounds mixing_rate[i, j, k] = 2 * κᵇ[i,j,k] * (dbdx² + dbdy² + dbdz²)
-end
-function IsotropicBuoyancyVarianceDissipationRate(model, b, κᵇ; location = (Center, Center, Center), kwargs...)
-    if location == (Center, Center, Center)
-        return KernelComputedField(Center, Center, Center, isotropic_buoyancy_variance_dissipation_rate_ccc!, model;
-                                   computed_dependencies=(b, κᵇ), kwargs...)
-    else
-        throw(Exception)
-    end
-end
-
-
-@kernel function anisotropic_buoyancy_variance_dissipation_rate_ccc!(mixing_rate, grid, b, params)
-    i, j, k = @index(Global, NTuple)
-    dbdx² = ℑxᶜᵃᵃ(i, j, k, grid, fψ², ∂xᶠᵃᵃ, b) # C, C, C  → F, C, C  → C, C, C
-    dbdy² = ℑyᵃᶜᵃ(i, j, k, grid, fψ², ∂yᵃᶠᵃ, b) # C, C, C  → C, F, C  → C, C, C
-    dbdz² = ℑzᵃᵃᶜ(i, j, k, grid, fψ², ∂zᵃᵃᶠ, b) # C, C, C  → C, C, F  → C, C, C
-
-    @inbounds mixing_rate[i, j, k] = 2 * (params.κx*dbdx² + params.κy*dbdy² + params.κz*dbdz²)
-end
-function AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz; location = (Center, Center, Center), kwargs...)
-    if location == (Center, Center, Center)
-        return KernelComputedField(Center, Center, Center, anisotropic_buoyancy_variance_dissipation_rate_ccc!, model;
-                                   computed_dependencies=(b,), 
-                                   parameters=(κx=κx, κy=κy, κz=κz), kwargs...)
-    else
-        throw(Exception)
-    end
-end
-#-----
-
-#-----
 
 
 #++++ Unpack model variables
@@ -108,11 +33,11 @@ U, V, W, = Oceananigans.Fields.BackgroundVelocityFields((u=u_g,), model.grid, mo
 B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, model.clock)
 
 if LES
-    νₑ = νz = model.diffusivities.νₑ
+    νₑ = νz = model.diffusivity_fields.νₑ
     if AMD
-        κₑ = κz = model.diffusivities.κₑ.b
+        κₑ = κz = model.diffusivity_fields.κₑ.b
     else
-        κₑ = κz = ComputedField(model.diffusivities.κₑ.b)
+        κₑ = κz = ComputedField(model.diffusivity_fields.κₑ.b)
     end
 else
     if model.closure isa IsotropicDiffusivity
@@ -141,14 +66,12 @@ function get_outputs_tuple(model; LES=false)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
-    tke = KineticEnergy(model, u, v, w, data=ccc_scratch.data)
+    tke = ComputedField(KineticEnergy(model), data=ccc_scratch.data)
     
     if LES
-        ε = IsotropicViscousDissipationRate(model, u, v, w, νₑ, data=ccc_scratch.data)
-        χ = IsotropicBuoyancyVarianceDissipationRate(model, b, κₑ, data=ccc_scratch.data)
+        ε = ComputedField(IsotropicViscousDissipationRate(model, u, v, w, νₑ), data=ccc_scratch.data)
     else
-        ε = AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz, data=ccc_scratch.data)
-        χ = AnisotropicBuoyancyVarianceDissipationRate(model, b, κx, κy, κz, data=ccc_scratch.data)
+        ε = ComputedField(AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz), data=ccc_scratch.data)
     end
 
     u_dissip = ComputedField((@at (Center, Center, Center) u * rate * mask_u * (u - U)), data=ccc_scratch.data)
@@ -156,19 +79,13 @@ function get_outputs_tuple(model; LES=false)
     w_dissip = ComputedField((@at (Center, Center, Center) w * rate * mask_w * w), data=ccc_scratch.data)
     sponge_dissip = @at (Center, Center, Center) (u_dissip + v_dissip + w_dissip)
 
-    PV_ver = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_vertical_fff!, model;
-                                 computed_dependencies=(u, v, b), 
-                                 parameters=f₀, data=fff_scratch.data)
+    PV = ComputedField(ErtelPotentialVorticityᶠᶠᶠ(model), data=fff_scratch.data)
+
+    dvpdy = ComputedField(YPressureRedistribution(model), data=ccc_scratch.data)
+    dwpdz = ComputedField(ZPressureRedistribution(model), data=ccc_scratch.data)
     
-    PV_hor = KernelComputedField(Face, Face, Face, ertel_potential_vorticity_horizontal_fff!, model;
-                                 computed_dependencies=(u, v, w, b), 
-                                 parameters=f₀, data=fff_scratch.data)
-    
-    dvpdy_ρ = YPressureRedistribution(model, v, p, ρ₀, data=ccc_scratch.data)
-    dwpdz_ρ = ZPressureRedistribution(model, w, p, ρ₀, data=ccc_scratch.data)
-    
-    shearprod_y = YShearProduction(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
-    shearprod_z = ZShearProduction(model, u-U, v, w, U, 0, 0, data=ccc_scratch.data)
+    shearprod_y = ComputedField(YShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
+    shearprod_z = ComputedField(ZShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
     #-----
     
     
@@ -180,15 +97,13 @@ function get_outputs_tuple(model; LES=false)
                b=b,
                p=ComputedField(p, data=ccc_scratch.data),
                wb_res=ComputedField(wb_res, data=ccc_scratch.data),
-               dwpdz_ρ=dwpdz_ρ,
-               dvpdy_ρ=dvpdy_ρ,
+               PV=PV,
+               dwpdz=dwpdz,
+               dvpdy=dvpdy,
                dbdz=ComputedField(dbdz, data=ccf_scratch.data),
                ω_x=ComputedField(ω_x, data=cff_scratch.data),
                tke=tke,
                ε=ε,
-               χ=χ,
-               PV_ver=PV_ver,
-               PV_hor=PV_hor,
                shearprod_y=shearprod_y,
                shearprod_z=shearprod_z,
                sponge_dissip=ComputedField(sponge_dissip, data=ccc_scratch.data),
@@ -274,7 +189,7 @@ function construct_outputs(model, simulation;
     @info "Setting up vid writer"
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
-    outputs_vid = delete(outputs_snap, (:dwpdz_ρ, :dvpdy_ρ, :p))
+    outputs_vid = delete(outputs_snap, (:dwpdz, :dvpdy, :p))
     if ndims==2 outputs_vid = merge(outputs_vid, (b_sorted=sort_b,)) end
     dims = Dict("b_sorted" => ("xC", "yC", "zC"),)
     
