@@ -93,15 +93,15 @@ end
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 5e-6,
-              Ny = 2^15,
-              Nz = 2^9,
-              Ly = 15_000,
-              Lz = 80,
+              Ny = Ny,
+              Nz = Nz,
+              Ly = Ly,
+              Lz = Lz,
               σ_y = 800,
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              νz = 2e-4,
+              νz = νz,
               sponge_frac = sponge_frac,
              )
 
@@ -112,11 +112,11 @@ end
               N2_inf = 1e-5, # 1/s²
               Ny = ThreeD ? Ny : 100*2^9,
               Nz = ThreeD ? Nz : 2^9,
-              Ly = 8000,
+              Ly = Ly,
               Lz = Lz,
               σ_y = 1600, # m
               σ_z = 50, # m
-              y_0 = +8000/2, # m
+              y_0 = +Ly/2, # m
               z_0 = 0, # m
               νz = νz,
               sponge_frac = sponge_frac,
