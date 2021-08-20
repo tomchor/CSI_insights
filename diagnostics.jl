@@ -36,11 +36,11 @@ u_tot = u
 b_tot = b
 
 if LES
-    νₑ = νz = model.diffusivities.νₑ
+    νₑ = νz = model.diffusivity_fields.νₑ
     if AMD
-        κₑ = κz = model.diffusivities.κₑ.b
+        κₑ = κz = model.diffusivity_fields.κₑ.b
     else
-        κₑ = κz = ComputedField(model.diffusivities.κₑ.b)
+        κₑ = κz = ComputedField(model.diffusivity_fields.κₑ.b)
     end
 else
     if model.closure isa IsotropicDiffusivity
