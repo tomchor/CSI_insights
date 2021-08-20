@@ -606,12 +606,12 @@ uuid = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
 version = "0.60.0"
 
 [[Oceanostics]]
-deps = ["KernelAbstractions", "Oceananigans", "Printf", "Test"]
-git-tree-sha1 = "a57f724f61461b8a0732c8db78cb353e9e0272c3"
+deps = ["Oceananigans", "Printf", "Test"]
+git-tree-sha1 = "2c9d5bd9f8c6e3c0fcf490769419e1fdb6c78e98"
 repo-rev = "main"
 repo-url = "https://github.com/tomchor/Oceanostics.jl.git"
 uuid = "d0ccf422-c8fb-49b5-a76d-74acdde946ac"
-version = "0.4.0"
+version = "0.5.0"
 
 [[OffsetArrays]]
 deps = ["Adapt"]
@@ -627,9 +627,9 @@ version = "1.3.5+0"
 
 [[OpenMPI_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "e0914cbfcc96f1b9097ca99cef1ae73a7b0efda9"
+git-tree-sha1 = "a784e5133fc7e204c900f2cf38ed37a92ff9248d"
 uuid = "fe0851c0-eecd-5654-98d4-656369965a5c"
-version = "4.1.1+1"
+version = "4.1.1+2"
 
 [[OpenSSL_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
