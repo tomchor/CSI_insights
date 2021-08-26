@@ -60,7 +60,7 @@ if ndims ∉ [2,3] # Validade input
     throw(AssertionError("Dimensions must be 2 or 3"))
 end
 
-@info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n", 
+@info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n"
 #-----
 
 
@@ -92,18 +92,23 @@ pickup = any(startswith("chk.$simname"), readdir("data"))
 if ndims==3
     Nx = Ny÷64
     Lx = (Ly / Ny) * Nx
+    topology = (Periodic, Bounded, Bounded)
+    grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
+                                  x=(0, Lx),
+                                  y=(0, Ly),
+                                  z=(-Lz, 0), 
+                                  topology=topology)
 else
     Nx = factor
     Lx = 6 * (Ly / Ny) * Nx
+    topology = (Flat, Bounded, Bounded)
+    grid = RegularRectilinearGrid(size=(Ny÷factor, Nz÷factor),
+                                  y=(0, Ly),
+                                  z=(-Lz, 0), 
+                                  topology=topology)
 end
-topology = (Periodic, Bounded, Bounded)
 
-grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
-                              x=(0, Lx),
-                              y=(0, Ly),
-                              z=(-Lz, 0), 
-                              topology=topology)
-@info grid
+@info "" grid
 #-----
 
 
@@ -121,7 +126,7 @@ Ri_r = N2_inf * σ_z^2 * exp(1/4) / u_0^2
 secondary_params = merge((LES=Int(LES), ρ_0=ρ₀, b_0=b₀,), (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
 
 global_attributes = merge(simulation_nml, secondary_params)
-@info "global_attributes = $global_attributes"
+@info "" global_attributes
 #-----
 
 
@@ -247,9 +252,14 @@ model.velocities.w.data.parent .-= w̄
 
 # Define time-stepping
 #++++
-u_scale = abs(u₀)
-Δt = 1/2 * min(grid.Δz, grid.Δy) / u_scale
-wizard = TimeStepWizard(cfl=0.9,
+if ndims==3
+    Δt = 1/2 * min(grid.Δz, grid.Δy) / abs(u_0)
+    cfl = 0.9
+else
+    Δt = 10 * min(grid.Δz, grid.Δy) / abs(u_0)
+    cfl = 0.2
+end
+wizard = TimeStepWizard(cfl=cfl,
                         diffusive_cfl=0.9,
                         Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
@@ -268,10 +278,10 @@ using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=stop_time,
                         wall_time_limit=23.5hours,
-                        iteration_interval=5,
+                        iteration_interval=1,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
-@info simulation
+@info "" simulation
 #-----
 
 
