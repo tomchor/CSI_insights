@@ -251,7 +251,7 @@ wizard = TimeStepWizard(cfl=0.9,
 # Finally define Simulation!
 #++++
 if ndims==3 # 3D LES simulation
-    stop_time = min(10*T_inertial, 20days)
+    stop_time = min(12*T_inertial, 20days)
 else # 2D DNS simulation
     stop_time = min(3*T_inertial, 20days)
 end
@@ -261,7 +261,7 @@ using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=wizard, 
                         stop_time=stop_time,
                         wall_time_limit=23.5hours,
-                        iteration_interval=5,
+                        iteration_interval=1,
                         progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
 @info "" simulation
