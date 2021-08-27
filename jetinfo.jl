@@ -105,6 +105,39 @@ end
               sponge_frac = sponge_frac,
              )
 
+    CIjet4 = (name = "CIsurfjet4",
+              f_0 = 5e-5,
+              u_0 = -0.2,
+              N2_inf = 5e-6,
+              Ny = Ny,
+              Nz = Nz,
+              Ly = Ly,
+              Lz = Lz,
+              σ_y = 800,
+              σ_z = 80,
+              y_0 = +Ly/2,
+              z_0 = 0,
+              νz = νz,
+              sponge_frac = sponge_frac,
+             )
+
+
+    CIjet5 = (name = "CIsurfjet5",
+              f_0 = 5e-5,
+              u_0 = -0.3,
+              N2_inf = 5e-6,
+              Ny = Ny,
+              Nz = Nz,
+              Ly = Ly,
+              Lz = Lz,
+              σ_y = 800,
+              σ_z = 80,
+              y_0 = +Ly/2,
+              z_0 = 0,
+              νz = νz,
+              sponge_frac = sponge_frac,
+             )
+
 
     SIjet1 = (name = "SIsurfjet1",
               f_0 = f_0,
