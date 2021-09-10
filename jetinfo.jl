@@ -123,14 +123,14 @@ end
 
 
     CIjet5 = (name = "CIsurfjet5",
-              f_0 = 5e-5,
-              u_0 = -0.3,
-              N2_inf = 5e-6,
+              f_0 = 7e-5,
+              u_0 = -0.2,
+              N2_inf = 1.4e-6,
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
               Lz = Lz,
-              σ_y = 800,
+              σ_y = 600,
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
@@ -141,14 +141,14 @@ end
 
     SIjet1 = (name = "SIsurfjet1",
               f_0 = f_0,
-              u_0 = -0.2, # m/s
-              N2_inf = 1e-5, # 1/s²
+              u_0 = -0.23, # m/s
+              N2_inf = 5e-6, # 1/s²
               Ny = ThreeD ? Ny : 100*2^9,
               Nz = ThreeD ? Nz : 2^9,
               Ly = Ly,
               Lz = Lz,
               σ_y = 1600, # m
-              σ_z = 50, # m
+              σ_z = 80, # m
               y_0 = +Ly/2, # m
               z_0 = 0, # m
               νz = νz,
@@ -175,7 +175,7 @@ end
     SIjet3 = (name = "SIsurfjet3",
               f_0 = f_0,
               u_0 = -0.2,
-              N2_inf = 1e-6,
+              N2_inf = 1.4e-6,
               Ny = Ny,
               Nz = Nz,
               Ly = Ly,
@@ -202,7 +202,7 @@ end
               σ_z = 80,
               y_0 = +Ly/2,
               z_0 = 0,
-              νz = 5e-4,
+              νz = 1e-3,
               sponge_frac = sponge_frac,
              )
 
