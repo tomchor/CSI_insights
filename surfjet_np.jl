@@ -253,7 +253,7 @@ wizard = TimeStepWizard(cfl=0.9,
 if ndims==3 # 3D LES simulation
     stop_time = min(12*T_inertial, 20days)
 else # 2D DNS simulation
-    stop_time = min(3*T_inertial, 20days)
+    stop_time = min(2.5*T_inertial, 20days)
 end
 include("diagnostics.jl")
 start_time = 1e-9*time_ns()
@@ -271,7 +271,7 @@ simulation = Simulation(model, Δt=wizard,
 # DIAGNOSTICS
 #++++
 const ρ0 = ρ₀
-checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac)
+checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, frac=frac, ndims=ndims)
 #-----
 
 

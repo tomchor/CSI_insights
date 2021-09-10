@@ -139,6 +139,7 @@ end
 #++++ Construct outputs into simulation
 function construct_outputs(model, simulation; 
                            LES=false, simname="TEST", frac=1/16,
+                           ndims=3,
                            )
 
     #++++ Check for checkpoints
@@ -192,11 +193,17 @@ function construct_outputs(model, simulation;
     outputs_vid = delete(outputs_snap, (:dwpdz, :dvpdy, :p))
     if ndims==2 outputs_vid = merge(outputs_vid, (b_sorted=sort_b,)) end
     dims = Dict("b_sorted" => ("xC", "yC", "zC"),)
+
+    if ndims==2
+        schedule = TimeInterval(15minutes)
+    else
+        schedule = TimeInterval(60minutes)
+    end
     
     simulation.output_writers[:vid_writer] =
         NetCDFOutputWriter(model, outputs_vid,
                            filepath = @sprintf("data/vid.%s.nc", simname),
-                           schedule = TimeInterval(60minutes),
+                           schedule = schedule,
                            mode = mode,
                            global_attributes = global_attributes,
                            dimensions = dims,
@@ -209,11 +216,8 @@ function construct_outputs(model, simulation;
     # AVG outputs
     #++++
     @info "Setting up avg writer"
-    x_average(F) = AveragedField(F, dims=(1,))
     xy_average(F) = AveragedField(F, dims=(1,2))
-    xz_average(F) = AveragedField(F, dims=(1,3))
     
-    #slicer = FieldSlicer(j=Int(grid.Ny*frac):Int(grid.Ny*(1-1*frac)), with_halos=false)
     hor_window_average(F) = WindowedSpatialAverage(F; dims=(1, 2))
     
     outputs_avg = map(hor_window_average, outputs_snap)
@@ -224,7 +228,7 @@ function construct_outputs(model, simulation;
     simulation.output_writers[:avg_writer] =
         NetCDFOutputWriter(model, outputs_avg,
                            filepath = @sprintf("data/avg.%s.nc", simname),
-                           schedule = TimeInterval(2minutes),
+                           schedule = TimeInterval(5minutes),
                            mode = mode,
                            global_attributes = global_attributes,
                            dimensions = dims,
