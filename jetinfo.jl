@@ -10,7 +10,7 @@ using Parameters
     sponge_frac = 1/16
     three_d = false
 
-    JD15exp = (name = "JD15exp",
+    JD15intexp = (name = "JD15exp",
                f_0 = f_0,
                u_0 = 0.35e0,
                N2_inf = 4.9e-5,
@@ -26,7 +26,7 @@ using Parameters
                sponge_frac = sponge_frac,
                )
 
-    CIjet01 = (name = "CIintjet01",
+    CIintjet01 = (name = "CIintjet01",
                f_0 = f_0,
                u_0 = -0.4, # m/s
                N2_inf = 4e-5, # 1/s²
@@ -57,7 +57,7 @@ end
     sponge_frac = 1/16
     ThreeD = false
 
-    CIjet1 = (name = "CIsurfjet1",
+    CIsurfjet1 = (name = "CIsurfjet1",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 1e-5,
@@ -73,7 +73,7 @@ end
               sponge_frac = sponge_frac,
              )
 
-    CIjet2 = (name = "CIsurfjet2",
+    CIsurfjet2 = (name = "CIsurfjet2",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 5e-5,
@@ -89,7 +89,7 @@ end
               sponge_frac = sponge_frac,
              )
 
-    CIjet3 = (name = "CIsurfjet3",
+    CIsurfjet3 = (name = "CIsurfjet3",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 5e-6,
@@ -105,7 +105,7 @@ end
               sponge_frac = sponge_frac,
              )
 
-    CIjet4 = (name = "CIsurfjet4",
+    CIsurfjet4 = (name = "CIsurfjet4",
               f_0 = 5e-5,
               u_0 = -0.2,
               N2_inf = 5e-6,
@@ -122,7 +122,7 @@ end
              )
 
 
-    CIjet5 = (name = "CIsurfjet5",
+    CIsurfjet5 = (name = "CIsurfjet5",
               f_0 = 7e-5,
               u_0 = -0.2,
               N2_inf = 1.4e-6,
@@ -139,7 +139,7 @@ end
              )
 
 
-    SIjet1 = (name = "SIsurfjet1",
+    SIsurfjet1 = (name = "SIsurfjet1",
               f_0 = f_0,
               u_0 = -0.23, # m/s
               N2_inf = 5e-6, # 1/s²
@@ -155,7 +155,7 @@ end
               sponge_frac = sponge_frac,
               )
 
-    SIjet2 = (name = "SIsurfjet2",
+    SIsurfjet2 = (name = "SIsurfjet2",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 1e-6,
@@ -172,7 +172,7 @@ end
              )
 
 
-    SIjet3 = (name = "SIsurfjet3",
+    SIsurfjet3 = (name = "SIsurfjet3",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 1.4e-6,
@@ -190,7 +190,7 @@ end
 
 
 
-    SIjet4 = (name = "SIsurfjet4",
+    SIsurfjet4 = (name = "SIsurfjet4",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 1e-6,
@@ -208,7 +208,7 @@ end
 
 
 
-    SIjet5 = (name = "SIsurfjet5",
+    SIsurfjet5 = (name = "SIsurfjet5",
               f_0 = f_0,
               u_0 = -0.1,
               N2_inf = 2.5e-7,
@@ -226,7 +226,7 @@ end
 
 
 
-    SIjet6 = (name = "SIsurfjet6",
+    SIsurfjet6 = (name = "SIsurfjet6",
               f_0 = f_0,
               u_0 = -0.2,
               N2_inf = 2.5e-6,

@@ -8,11 +8,10 @@ using Oceananigans.Units
 using Oceananigans.Advection: WENO5
 using Oceananigans.OutputWriters, Oceananigans.Fields
 using SpecialFunctions: erf
-using CUDA: has_cuda
+using CUDA: has_cuda_gpu
 
 
-# Read and parse initial arguments
-#++++
+#++++ Read and parse initial arguments
 "Returns a dictionary of command line arguments."
 function parse_command_line_arguments()
     settings = ArgParseSettings()
@@ -23,72 +22,72 @@ function parse_command_line_arguments()
             default = 32
             arg_type = Int
 
-        "--arch"
-            help = "CPU or GPU or nothing"
-            default = nothing
-
-        "--fullname"
+        "--simname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "S2d_SIjet1"
+            default = "FNN_SIsurfjet1"
             arg_type = String
     end
     return parse_args(settings)
 end
 args = parse_command_line_arguments()
 factor = args["factor"]
-fullname = args["fullname"]
-if args["arch"]==nothing
-    arch = has_cuda() ? GPU() : CPU()
-else
-    arch = eval(Meta.parse(args["arch"]*"()"))
-end
+simname = args["simname"]
+#-----
 
 
+#++++ Figure out modifiers
+sep = "_"
 try
-    global setup, jet, modifier = split(fullname, "_")
+    global topology, jet, modifier = split(simname, sep)
     global AMD = modifier=="AMD" ? true : false
     global noflux = modifier=="NF" ? true : false
 catch e
-    global setup, jet = split(fullname, "_")
+    global topology, jet = split(simname, "_")
     global AMD = false
     global noflux = false
 end
-ndims = parse(Int, strip(setup, ['S', 'd']))
-jet = Symbol(jet)
+#----
 
-if ndims ∉ [2,3] # Validade input
-    throw(AssertionError("Dimensions must be 2 or 3"))
+
+#++++ Figure out number of dimensions
+if topology == "PNN"
+    ndims = 3
+elseif topology == "FNN"
+    ndims = 2
+else
+    throw(AssertionError("Topology must be either PNN and FNN"))
 end
+#----
 
+
+#++++ Figure out architecture
+if has_cuda_gpu()
+    arch = GPU()
+else
+    arch = CPU()
+end
 @info "Starting $(ndims)d jet $jet with a dividing factor of $factor and a $arch architecture\n"
 #-----
 
 
-# Get primary simulation parameters
-#++++
+#++++ Get primary simulation parameters
 include("jetinfo.jl")
 
 if ndims==3 # 3D LES simulation
-    simulation_nml = getproperty(SurfaceJetSimulations(Ny=100*2^5, Nz=2^7, ThreeD=true), jet)
-    prefix = "PNN"
+    simulation_nml = getproperty(SurfaceJetSimulations(Ny=100*2^5, Nz=2^7, ThreeD=true), Symbol(jet))
     LES = true
 else # 2D DNS simulation
-    simulation_nml = getproperty(SurfaceJetSimulations(), jet)
-    prefix = "FNN"
+    simulation_nml = getproperty(SurfaceJetSimulations(), Symbol(jet))
     LES = false
 end
 @unpack name, f_0, u_0, N2_inf, Ny, Nz, Ly, Lz, σ_y, σ_z, y_0, z_0, νz, sponge_frac = simulation_nml
 
-if @isdefined modifier
-    simname = "$(prefix)_$(name)_$(modifier)"
-else
-    simname = "$(prefix)_$(name)"
-end
+prefix = topology
+
 pickup = any(startswith("chk.$simname"), readdir("data"))
 #-----
 
-# Set GRID
-#++++  GRID
+#++++ Set GRID
 if ndims==3
     Nx = Ny÷16
     Lx = (Ly / Ny) * Nx
@@ -107,8 +106,7 @@ grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
 #-----
 
 
-# Calculate secondary parameters
-#++++
+#++++ Calculate secondary parameters
 b₀ = u_0 * f_0
 ρ₀ = 1027
 T_inertial = 2*π/f_0
@@ -279,7 +277,7 @@ checkpointer = construct_outputs(model, simulation, LES=LES, simname=simname, fr
 #+++++
 println("\n", simulation,
         "\n",)
-if has_cuda() run(`nvidia-smi`) end
+if has_cuda_gpu() run(`nvidia-smi`) end
 
 
 @printf("---> Starting run!\n")
