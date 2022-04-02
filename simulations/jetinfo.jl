@@ -57,6 +57,22 @@ end
     sponge_frac = 1/16
     ThreeD = false
 
+    CItest1 = (name = "CItest1",
+               f_0 = f_0,
+               u_0 = -0.2,
+               N2_inf = 1e-5,
+               Ny = ThreeD ? Ny : Ny_2d,
+               Nz = ThreeD ? Nz : Nz_2d,
+               Ly = Ly,
+               Lz = Lz,
+               σ_y = 800,
+               σ_z = 80,
+               y_0 = +Ly/2,
+               z_0 = 0,
+               νz = 5e-4,
+               sponge_frac = sponge_frac,
+               )
+
     CIsurfjet1 = (name = "CIsurfjet1",
                   f_0 = f_0,
                   u_0 = -0.2,
