@@ -3,17 +3,17 @@ snames = ["PNN_CIsurfjet1",
           "PNN_CIsurfjet2",
           "PNN_CIsurfjet3",
           "PNN_CIsurfjet4",
-          "PNN_CIsurfjet5",
-          #"PNN_SIsurfjet1",
+          #"PNN_CIsurfjet5",
+          "PNN_SIsurfjet1",
           "PNN_SIsurfjet2",
           "PNN_SIsurfjet3",
           "PNN_SIsurfjet4",
           "PNN_SIsurfjet5",
           "PNN_SIsurfjet6",
           #"PNN_CIintjet01",
-          "FNN_CIsurfjet1",
-          "FNN_CIsurfjet3",
-          "FNN_SIsurfjet4",
+          #"FNN_CIsurfjet1",
+          #"FNN_CIsurfjet3",
+          #"FNN_SIsurfjet4",
           ]
 
 verbose = 1
@@ -22,7 +22,7 @@ data_dir = "data/"
 remove_checkpoints = False
 
 pbs_script = \
-"""#!/bin/bash -l
+r"""#!/bin/bash -l
 #PBS -A UMCP0012
 #PBS -N {0}
 #PBS -k eod
