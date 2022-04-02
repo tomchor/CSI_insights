@@ -5,8 +5,7 @@ from aux00_utils import open_simulation
 π = np.pi
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = ["PNN_CIsurfjet1",
           "PNN_CIsurfjet2",
           "PNN_CIsurfjet3",
@@ -18,7 +17,7 @@ snames = ["PNN_CIsurfjet1",
           "PNN_SIsurfjet4",
           "PNN_SIsurfjet5",
           "PNN_SIsurfjet6",
-          "PNN_CIintjet01",
+          #"PNN_CIintjet01",
           ]
 #----
 
@@ -127,11 +126,11 @@ for sname in snames:
     #----
 
     #++++ Save to disk
-    ds_eff.to_netcdf(f"data/efficiencies_{sname}.nc")
+    ds_eff.to_netcdf(f"data_post/efficiencies_{sname}.nc")
     #----
     
 #++++ Create and save dataset
 alleffs = xr.concat(effslist, dim="simulation", combine_attrs="drop")
-alleffs.to_netcdf("data/alleffs.nc")
+alleffs.to_netcdf("data_post/alleffs.nc")
 #----
 

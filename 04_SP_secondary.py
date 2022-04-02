@@ -6,8 +6,7 @@ from dask.diagnostics import ProgressBar
 π = np.pi
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = [#"FNN_CIintjet01",
           #"FNN_CIsurfjet1",
           "FNN_CIsurfjet3",
@@ -162,5 +161,5 @@ for sname in snames:
 
     #+++++ Save to disk
     with ProgressBar():
-        vidwind.to_netcdf(f"data/shearprod_secondary_{sname}.nc")
+        vidwind.to_netcdf(f"data_post/shearprod_secondary_{sname}.nc")
     #-----

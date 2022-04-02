@@ -5,8 +5,7 @@ from aux00_utils import open_simulation
 
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = [#"FNN_CIsurfjet1",
           #"FNN_SIsurfjet4",
           "PNN_CIsurfjet1",
@@ -107,7 +106,7 @@ for sname in snames:
     dsout["SPy_lin"] = dsout.SPy_avg.isel(time=-1)
     dsout["SPz_lin"] = dsout.SPz_avg.isel(time=-1)
 
-    dsout.to_netcdf(f"data/shearprod_{sname}.nc")
+    dsout.to_netcdf(f"data_post/shearprod_{sname}.nc")
 
     dsout = dsout.expand_dims("simulation").assign_coords(simulation=[sname])
     dslist.append(dsout)
@@ -148,5 +147,5 @@ for sname in snames:
 #++++ Create and save dataset
 print("Saving allshearprod...")
 allshearprod = xr.concat(dslist, dim="simulation")
-allshearprod.to_netcdf("data/allshearprod.nc")
+allshearprod.to_netcdf("data_post/allshearprod.nc")
 #----

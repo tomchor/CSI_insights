@@ -17,8 +17,7 @@ extra = "_cond"
 #----
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = ["PNN_CIsurfjet1",
           "PNN_CIsurfjet2",
           "PNN_CIsurfjet3",
@@ -36,7 +35,7 @@ snames = ["PNN_CIsurfjet1",
 
 
 ν_m = 1e-6
-allparams = xr.load_dataset("data/allparams.nc")
+allparams = xr.load_dataset("data_post/allparams.nc")
 for i, sname in enumerate(snames):
     print(f"Opening {sname}")
     print(f"Extra: {extra}")
@@ -111,7 +110,7 @@ for i, sname in enumerate(snames):
 
     if "mask" in extra:
         print("Getting masks for IC averaging")
-        allICs = xr.open_dataset("data/allICs.nc").chunk(dict(simulation=1))
+        allICs = xr.open_dataset("data_post/allICs.nc").chunk(dict(simulation=1))
         mask_acc = allICs.sel(simulation=sname).mask_acc
         mask_acf = allICs.sel(simulation=sname).mask_acf
         mask_afc = allICs.sel(simulation=sname).mask_afc
@@ -235,7 +234,7 @@ for i, sname in enumerate(snames):
                             t_εmax=t_εmax,
                             ))
 
-    fname = f"data/Reb_{sname}{extra}.nc"
+    fname = f"data_post/Reb_{sname}{extra}.nc"
     print(f"Saving results to {fname}")
     with ProgressBar():
         dsout.to_netcdf(fname)

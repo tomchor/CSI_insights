@@ -6,8 +6,7 @@ from aux01_physfuncs import get_ref_quantities, adjust_variables, get_bulk_param
 π = np.pi
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = ["PNN_CIsurfjet1",
           "PNN_CIsurfjet2",
           "PNN_CIsurfjet3",
@@ -19,7 +18,7 @@ snames = ["PNN_CIsurfjet1",
           "PNN_SIsurfjet4",
           "PNN_SIsurfjet5",
           "PNN_SIsurfjet6",
-          "PNN_CIintjet01",
+          #"PNN_CIintjet01",
           "FNN_CIsurfjet1",
           "FNN_CIsurfjet3",
           "FNN_SIsurfjet4",
@@ -61,6 +60,6 @@ for sname in snames:
     
 #++++ Create and save dataset
 allparams = xr.concat(paramlist, dim="simulation")
-allparams.to_netcdf("data/allparams.nc")
+allparams.to_netcdf("data_post/allparams.nc")
 #----
 

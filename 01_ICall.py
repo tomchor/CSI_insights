@@ -7,8 +7,7 @@ from dask.diagnostics import ProgressBar
 π = np.pi
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = ["PNN_CIsurfjet1",
           "PNN_CIsurfjet2",
           "PNN_CIsurfjet3",
@@ -64,7 +63,7 @@ for sname in snames:
     #----
 
     #++++ Interpolate to get masks
-    IC = IC.rename(PV="PV_aff")
+    IC = IC.rename(q_hat="PV_aff")
     IC["PV_acc"] = grid_vid.interp(IC.PV_aff, ['y', 'z'])
     IC["PV_acf"] = grid_vid.interp(IC.PV_aff, 'y')
     IC["PV_afc"] = grid_vid.interp(IC.PV_aff, 'z')
@@ -82,6 +81,6 @@ for sname in snames:
 #++++ Create and save dataset
 allICs = xr.concat(IClist, dim="simulation")
 with ProgressBar():
-    allICs.to_netcdf("data/allICs.nc")
+    allICs.to_netcdf("data_post/allICs.nc")
 #----
 
