@@ -18,6 +18,12 @@ snames = ["PNN_CIsurfjet1",
           "PNN_SIsurfjet5",
           "PNN_SIsurfjet6",
           #"PNN_CIintjet01",
+          "PNN_CIsurfjet1_f2",
+          "PNN_CIsurfjet1_f4",
+          "PNN_CIsurfjet1_f8",
+          "PNN_SIsurfjet4_f2",
+          "PNN_SIsurfjet4_f4",
+          "PNN_SIsurfjet4_f8",
           ]
 #----
 
@@ -66,11 +72,9 @@ for sname in snames:
 
  
     #++++ Get important times and perform average
-    times_vid = [0, 0.5, 2, 3, 5, 10]
     times_avg = slice(None, None, None)
     
     avg = avg.sel(time=times_avg)
-    vid = vid.sel(time=times_vid, method="nearest")
     avg_0d = avg.mean(("zC"))
     #-----
     
@@ -97,8 +101,56 @@ for sname in snames:
     γ_coeff = ε_p / ε_k
     Γ_coeff = ε_p_int / ε_k_int
     #-----
+
+    #++++ Calculate the Ozmidov scale
+    t_max = float(avg_0d.where(avg_0d.ε == avg_0d.ε.max(), drop=True).time)
+    def_times = [0, 0.5, 2, 3, 4, 5, 8, 10]
+    vid_reltimes = vid.sel(time=slice(t_max, None, 5))
+    #times_vid = np.sort(np.append(t_max,  [el for el in def_times if el > t_max ]))
+    #vid_reltimes = vid.sel(time=times_vid, method="nearest")
+
+
+    #++++++ Max(<ε>) calculation
+    if False:
+        print("Calculating ε_max by percentile")
+        ε_max = np.percentile(vid_reltimes.ε.sel(time=t_max, method="nearest"), 99.)
+
+    elif False:
+        print("Calculating ε_max by coarsening")
+        y_window = int(100//vid_reltimes.ΔyF.max()) # 100 m resolution in horizontal
+        z_window = int(10//vid_reltimes.ΔzF.max()) # 10 m resolution in vertical
+
+        ε_max = vid_reltimes.ε.coarsen(yC=y_window, zC=z_window, boundary="trim").mean().max()
+    else:
+        print("Don't calculate ε_max")
+        ε_max = 1e-10
+    #------
+
+    #++++ Filter out places with low dissipation
+    mask_ccc = vid_reltimes.ε >= ε_max
+    mask_ccf = grid_vid.interp(vid_reltimes.ε, 'z', boundary="fill") >= ε_max
+
+    ε_filt = vid_reltimes.ε.where(mask_ccc, drop=True)
+    dbdz_filt = vid_reltimes.dbdz.where(mask_ccf, drop=True)
+    dbdz_filt2 = grid_vid.interp(vid_reltimes.dbdz, 'z').where(mask_ccc, drop=True)
+
+    N_filt = np.sqrt(dbdz_filt)
+    N_filt2 = np.sqrt(dbdz_filt2)
+    #----
+
+    #+++++ Ozmidov scale calculation
+    N_inf = np.sqrt(vid_reltimes.N2_inf)
+    N_avg = np.sqrt(dbdz_filt.pnmean())
+    ε_avg = ε_filt.pnmean()
+
+    Lo_inf = 2*π*np.sqrt(ε_avg / N_inf**3) # Using √(<ε>/N_inf³)
+    Lo_avg = 2*π*np.sqrt(ε_avg / N_avg**3) # Using √(<ε>/<N>³)
+    Lo = 2*π * (np.sqrt(ε_filt / N_filt2**3)).pnmean() # Using < √(ε/N³) >
+    #-----
+    #----
+
     
-    #++++
+    #++++ Create dataset
     ds_eff = xr.Dataset(dict(γ=γ, Γ=Γ, 
                              γ2=γ2, Γ2=Γ2,
                              γ_coeff=γ_coeff, Γ_coeff=Γ_coeff,
@@ -108,6 +160,11 @@ for sname in snames:
                              sponge_dissip=avg_0d.sponge_dissip,
                              ε_p_int=ε_p_int,
                              denom_int=denom_int, denom_int2=denom_int2,
+                             Lo_inf=Lo_inf,
+                             Lo_avg=Lo_avg,
+                             Lo=Lo,
+                             Δz = float(vid_reltimes.ΔzC.median()),
+                             Δy = float(vid_reltimes.ΔyC.median()),
                              ))
     #----
 
