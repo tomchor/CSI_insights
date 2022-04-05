@@ -73,7 +73,7 @@ end
                sponge_frac = sponge_frac,
                )
 
-    CIsurfjet1 = (name = "CIsurfjet1",
+    CIfront1 = (name = "CIfront1",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 1e-5,
@@ -89,7 +89,7 @@ end
                   sponge_frac = sponge_frac,
                  )
 
-    CIsurfjet2 = (name = "CIsurfjet2",
+    CIfront2 = (name = "CIfront2",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 5e-5,
@@ -105,7 +105,7 @@ end
                   sponge_frac = sponge_frac,
                  )
 
-    CIsurfjet3 = (name = "CIsurfjet3",
+    CIfront3 = (name = "CIfront3",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 5e-6,
@@ -121,7 +121,7 @@ end
                   sponge_frac = sponge_frac,
                  )
 
-    CIsurfjet4 = (name = "CIsurfjet4",
+    CIfront4 = (name = "CIfront4",
                   f_0 = 5e-5,
                   u_0 = -0.2,
                   N2_inf = 5e-6,
@@ -138,7 +138,7 @@ end
                  )
 
 
-    CIsurfjet5 = (name = "CIsurfjet5",
+    CIfront5 = (name = "CIfront5",
                   f_0 = 7e-5,
                   u_0 = -0.2,
                   N2_inf = 1.4e-6,
@@ -155,7 +155,7 @@ end
                  )
 
 
-    SIsurfjet1 = (name = "SIsurfjet1",
+    SIfront1 = (name = "SIfront1",
                   f_0 = f_0,
                   u_0 = -0.23, # m/s
                   N2_inf = 5e-6, # 1/s²
@@ -171,7 +171,7 @@ end
                   sponge_frac = sponge_frac,
                   )
     
-    SIsurfjet2 = (name = "SIsurfjet2",
+    SIfront2 = (name = "SIfront2",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 1e-6,
@@ -188,7 +188,7 @@ end
                  )
     
     
-    SIsurfjet3 = (name = "SIsurfjet3",
+    SIfront3 = (name = "SIfront3",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 1.4e-6,
@@ -206,7 +206,7 @@ end
     
     
     
-    SIsurfjet4 = (name = "SIsurfjet4",
+    SIfront4 = (name = "SIfront4",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 1e-6,
@@ -224,7 +224,7 @@ end
     
     
     
-    SIsurfjet5 = (name = "SIsurfjet5",
+    SIfront5 = (name = "SIfront5",
                   f_0 = f_0,
                   u_0 = -0.1,
                   N2_inf = 2.5e-7,
@@ -242,7 +242,7 @@ end
     
     
     
-    SIsurfjet6 = (name = "SIsurfjet6",
+    SIfront6 = (name = "SIfront6",
                   f_0 = f_0,
                   u_0 = -0.2,
                   N2_inf = 2.5e-6,
@@ -260,7 +260,7 @@ end
     
     
     
-    Stabsurfjet1 = (name = "Stabsurfjet1",
+    Stabfront1 = (name = "Stabfront1",
                     f_0 = f_0,
                     u_0 = -0.08,
                     N2_inf = 1e-5,
@@ -277,7 +277,7 @@ end
                     )
     
     
-    Sloshsurfjet1 = (name = "Sloshsurfjet1",
+    Sloshfront1 = (name = "Sloshfront1",
                      f_0 = f_0,
                      u_0 = -0.08,
                      N2_inf = 1e-5,

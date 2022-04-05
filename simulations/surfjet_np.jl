@@ -236,7 +236,7 @@ model = NonhydrostaticModel(architecture = arch,
                             buoyancy = BuoyancyTracer(),
                             boundary_conditions = (b=bbc, u=ubc, v=vbc, w=wbc),
                             forcing = forcing,
-                            closure=closure,
+                            closure = closure,
                             )
 println("\n", model, "\n")
 #-----
