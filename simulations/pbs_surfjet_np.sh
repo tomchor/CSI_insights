@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #PBS -A UMCP0012
-#PBS -N FNN_CIsurfjet3
+#PBS -N PNN_CItest1_f8
 #PBS -k eod
-#PBS -o logs/FNN_CIsurfjet3.out
-#PBS -e logs/FNN_CIsurfjet3.err
+#PBS -o logs/PNN_CItest1_f8.out
+#PBS -e logs/PNN_CItest1_f8.err
 #PBS -l walltime=24:00:00
 #PBS -q casper
 #PBS -l select=1:ncpus=1:ngpus=1
@@ -23,5 +23,5 @@ module li
 export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
 
 peak_memusage.exe julia --project \
-    surfjet_np.jl --simname=FNN_CIsurfjet3 --factor=1 2>&1 | tee out/FNN_CIsurfjet3.out
+    surfjet_np.jl --simname=PNN_CItest1_f8 --factor=1 2>&1 | tee out/PNN_CItest1_f8.out
 

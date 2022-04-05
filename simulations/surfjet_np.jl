@@ -24,7 +24,7 @@ function parse_command_line_arguments()
 
         "--simname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "FNN_SIsurfjet1"
+            default = "PNN_CItest1"
             arg_type = String
     end
     return parse_args(settings)
@@ -41,10 +41,29 @@ try
     global topology, jet, modifier = split(simname, sep)
     global AMD = modifier=="AMD" ? true : false
     global noflux = modifier=="NF" ? true : false
+    global f2 = modifier=="f2" ? true : false
+    global f4 = modifier=="f4" ? true : false
+    global f8 = modifier=="f8" ? true : false
 catch e
     global topology, jet = split(simname, "_")
     global AMD = false
     global noflux = false
+    global f2 = false
+    global f4 = false
+    global f8 = false
+end
+#----
+
+
+#++++ Change resolution based on the name
+if f2
+    factor = 2
+elseif f4
+    factor = 4
+elseif f8
+    factor = 8
+else
+    throw(AssertionError("Check modifiers"))
 end
 #----
 
