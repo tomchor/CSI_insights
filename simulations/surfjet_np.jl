@@ -62,8 +62,6 @@ elseif f4
     factor = 4
 elseif f8
     factor = 8
-else
-    throw(AssertionError("Check modifiers"))
 end
 #----
 
