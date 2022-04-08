@@ -64,8 +64,7 @@ for sname in snames:
         vid = vid[variables_vid]
     #---
 
-    # BPE calculation
-    #+++++++
+    #+++++++ BPE calculation
     avg["BPE"] = -(avg.b_sorted * avg.zC)
     avg["dBPEdt"] = avg.BPE.load().differentiate("time")/avg.T_inertial
     #-------

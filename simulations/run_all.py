@@ -52,7 +52,7 @@ module li
 
 #/glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
-export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
+export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia"
 
 peak_memusage.exe julia --project \
     surfjet_np.jl --simname={0} --factor=1 2>&1 | tee out/{0}.out
