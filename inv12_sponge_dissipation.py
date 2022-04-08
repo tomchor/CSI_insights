@@ -2,21 +2,21 @@ import numpy as np
 import pynanigans as pn
 import xarray as xr
 from aux00_utils import open_simulation
+from matplotlib import pyplot as plt
 π = np.pi
 
 #++++ Define directory and simulation name
-dirname = "ISI_jet"
-path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = ["PNN_CIsurfjet1",
-          "PNN_CIsurfjet2",
-          "PNN_CIsurfjet3",
-          "PNN_SIsurfjet1",
-          "PNN_SIsurfjet2",
-          "PNN_SIsurfjet3",
+          #"PNN_CIsurfjet2",
+          #"PNN_CIsurfjet3",
+          #"PNN_SIsurfjet1",
+          #"PNN_SIsurfjet2",
+          #"PNN_SIsurfjet3",
           "PNN_SIsurfjet4",
-          "PNN_SIsurfjet5",
-          "PNN_SIsurfjet6",
-          "PNN_CIintjet01",
+          #"PNN_SIsurfjet5",
+          #"PNN_SIsurfjet6",
+          #"PNN_CIintjet01",
           ]
 #----
 
@@ -37,21 +37,52 @@ for sname in snames:
                                     )
     #----
 
+    #+++++++ BPE calculation
+    avg["BPE"] = -(avg.b_sorted * avg.zC)
+    avg["dBPEdt"] = avg.BPE.load().differentiate("time")/avg.T_inertial
+    avg["ε_p"] = avg.dBPEdt
+    #-------
 
  
     #++++ Get important times and perform average
-    times_vid = [0, 0.5, 2, 3, 5, 10]
-    times_avg = slice(None, None, None)
+    times_avg = slice(None, None, 5)
     
     avg = avg.sel(time=times_avg)
-    avg_0d = avg.mean(("zC"))
+    avg_0d = avg.mean(("zC", "zF"))
+    #-----
+
+    #+++++ Get SGS buoyancy flux
+    qb = (- vid.κ_e * grid_vid.interp(vid.dbdz, 'z')).load()
+    qb_abs = abs(qb)
+    wb_abs = abs(vid.wb_res)
+    avg_0d["qb"] = qb.pnmean(('y', 'z'))
+    avg_0d["qb_abs"] = qb_abs.pnmean(('y', 'z'))
+    avg_0d["wb_abs"] = wb_abs.pnmean(('y', 'z'))
     #-----
     
     #++++ Integrate dissipations in time
-    ε_k_int = avg_0d.ε.integrate("time")
-    ε_s_int = avg_0d.sponge_dissip.integrate("time")
+    εk_int = avg_0d.ε.integrate("time")
+    εp_int = avg_0d.ε_p.integrate("time")
+    εs_int = avg_0d.sponge_dissip.integrate("time")
+    wb_int = avg_0d.wb_res.integrate("time")
+    qb_int = avg_0d.qb.integrate("time")
     #----
 
     #++++ Ratio between dissipations
-    print(f"Ratio between dissipations for simulation {sname} is ", float(ε_s_int / ε_k_int))
+    print(f"Ratio between ε_sponge and ε_k for simulation {sname} is ", float(εs_int / εk_int))
+    print(f"Ratio between w'b' and ε_k for simulation {sname} is ", float(wb_int / εk_int))
+    print(f"Ratio between w'b' and ε_p for simulation {sname} is ", float(wb_int / εp_int))
+    print(f"Ratio between w'b' and q_b for simulation {sname} is ", float(wb_int / qb_int))
+    #----
+
+    #++++ Plot results
+    plt.figure()
+    #avg_0d.ε.plot(label=r"Mean KE dissipation rate $\varepsilon_k$")
+    avg_0d.ε_p.plot(label=r"Mean buoyancy mixing rate $\varepsilon_p$")
+    (-avg_0d.wb_res).plot(label=r"$-\langle w'b'\rangle$")
+
+    fig, ax = plt.gcf(), plt.gca()
+    ax.set_title(sname)
+    ax.legend(); ax.grid(True)
+    fig.savefig(f"figures_check/{sname}_wb_εp.png")
     #----
