@@ -9,16 +9,11 @@ plt.rcParams['figure.constrained_layout.use'] = True
 
 # Define dir and file names
 #++++
-dirname = "ISI_jet"
-#dirname = "testing_ISI_jet"
-#dirname = "testing_ISI_jet2"
-#dirname = "test_profile"
-#path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-path = f"/glade/u/home/tomasc/work_cheyenne/{dirname}/data/"
+path = f"simulations/data/"
 snames = [#"FNN_CIintjet01",
-          "FNN_CIsurfjet1",
-          "FNN_CIsurfjet3",
-          "FNN_SIsurfjet4",
+          #"FNN_CIsurfjet1",
+          #"FNN_CIsurfjet3",
+          #"FNN_SIsurfjet4",
           #"FNN_TEST3SIsurfjet4",
           #"FNN_sloshsurfjet1",
           #"FNN_stabsurfjet1",
@@ -35,6 +30,7 @@ snames = [#"FNN_CIintjet01",
           #"PNN_SIsurfjet4",
           #"PNN_SIsurfjet5",
           #"PNN_SIsurfjet6",
+          "PNN_CIsurfjet1_AMD",
           ]
 #----
 
@@ -207,7 +203,7 @@ for sname in snames:
             #client = Client(n_workers=18, memory_limit='0.5GB', processes=False)
             #print("Client :", client)
             print("Start frame saving")
-            anim_horvort.save(f"anims2/{sname}_horvort.mp4",
+            anim_horvort.save(f"anims/{sname}_horvort.mp4",
                               remove_frames=True,
                               remove_movie=False,
                               progress=True,
