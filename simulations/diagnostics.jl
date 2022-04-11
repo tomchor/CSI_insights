@@ -5,7 +5,6 @@ import NCDatasets as NCD
 using Oceananigans.AbstractOperations: @at, ∂x, ∂y, ∂z
 using Oceananigans.Units
 using Oceananigans.Operators
-using Oceananigans.Fields: ComputedField, KernelComputedField
 using Oceananigans.Diagnostics: WindowedSpatialAverage
 using Oceananigans.Grids: Center, Face
 
@@ -14,16 +13,16 @@ using Oceanostics: KineticEnergy,
                    AnisotropicPseudoViscousDissipationRate,
                    YPressureRedistribution, ZPressureRedistribution,
                    YShearProduction, ZShearProduction
-using Oceanostics.FlowDiagnostics: ErtelPotentialVorticityᶠᶠᶠ
+using Oceanostics.FlowDiagnostics: ErtelPotentialVorticity
 
 
 
 #++++ Unpack model variables
-ccc_scratch = Field(Center, Center, Center, model.architecture, model.grid)
-fcc_scratch = Field(Face, Center, Center, model.architecture, model.grid)
-ccf_scratch = Field(Center, Center, Face, model.architecture, model.grid)
-cff_scratch = Field(Center, Face, Face, model.architecture, model.grid)
-fff_scratch = Field(Face, Face, Face, model.architecture, model.grid)
+ccc_scratch = Field{Center, Center, Center}(model.grid)
+fcc_scratch = Field{Face, Center, Center}(model.grid)
+ccf_scratch = Field{Center, Center, Face}(model.grid)
+cff_scratch = Field{Center, Face, Face}(model.grid)
+fff_scratch = Field{Face, Face, Face}(model.grid)
 
 u, v, w = model.velocities
 b = model.tracers.b
@@ -37,7 +36,7 @@ if LES
     if AMD
         κₑ = κz = model.diffusivity_fields.κₑ.b
     else
-        κₑ = κz = ComputedField(model.diffusivity_fields.κₑ.b)
+        κₑ = κz = Field(model.diffusivity_fields.κₑ.b)
     end
 else
     if model.closure isa IsotropicDiffusivity
@@ -66,26 +65,26 @@ function get_outputs_tuple(model; LES=false)
     ω_x = ∂y(w) - ∂z(v)
     
     wb_res = @at (Center, Center, Center) w*b
-    tke = ComputedField(KineticEnergy(model), data=ccc_scratch.data)
+    tke = Field(KineticEnergy(model), data=ccc_scratch.data)
     
     if LES
-        ε = ComputedField(IsotropicViscousDissipationRate(model, u, v, w, νₑ), data=ccc_scratch.data)
+        ε = Field(IsotropicViscousDissipationRate(model), data=ccc_scratch.data)
     else
-        ε = ComputedField(AnisotropicPseudoViscousDissipationRate(model, u, v, w, νx, νy, νz), data=ccc_scratch.data)
+        ε = Field(AnisotropicPseudoViscousDissipationRate(model), data=ccc_scratch.data)
     end
 
-    u_dissip = ComputedField((@at (Center, Center, Center) u * rate * mask_u * (u - U)), data=ccc_scratch.data)
-    v_dissip = ComputedField((@at (Center, Center, Center) v * rate * mask_v * v), data=ccc_scratch.data)
-    w_dissip = ComputedField((@at (Center, Center, Center) w * rate * mask_w * w), data=ccc_scratch.data)
+    u_dissip = Field((@at (Center, Center, Center) u * rate * mask_u * (u - U)), data=ccc_scratch.data)
+    v_dissip = Field((@at (Center, Center, Center) v * rate * mask_v * v), data=ccc_scratch.data)
+    w_dissip = Field((@at (Center, Center, Center) w * rate * mask_w * w), data=ccc_scratch.data)
     sponge_dissip = @at (Center, Center, Center) (u_dissip + v_dissip + w_dissip)
 
-    PV = ComputedField(ErtelPotentialVorticityᶠᶠᶠ(model), data=fff_scratch.data)
+    PV = Field(ErtelPotentialVorticity(model), data=fff_scratch.data)
 
-    dvpdy = ComputedField(YPressureRedistribution(model), data=ccc_scratch.data)
-    dwpdz = ComputedField(ZPressureRedistribution(model), data=ccc_scratch.data)
+    dvpdy = Field(YPressureRedistribution(model), data=ccc_scratch.data)
+    dwpdz = Field(ZPressureRedistribution(model), data=ccc_scratch.data)
     
-    shearprod_y = ComputedField(YShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
-    shearprod_z = ComputedField(ZShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
+    shearprod_y = Field(YShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
+    shearprod_z = Field(ZShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
     #-----
     
     
@@ -95,18 +94,18 @@ function get_outputs_tuple(model; LES=false)
                v=v,
                w=w,
                b=b,
-               p=ComputedField(p, data=ccc_scratch.data),
-               wb_res=ComputedField(wb_res, data=ccc_scratch.data),
+               p=Field(p, data=ccc_scratch.data),
+               wb_res=Field(wb_res, data=ccc_scratch.data),
                PV=PV,
                dwpdz=dwpdz,
                dvpdy=dvpdy,
-               dbdz=ComputedField(dbdz, data=ccf_scratch.data),
-               ω_x=ComputedField(ω_x, data=cff_scratch.data),
+               dbdz=Field(dbdz, data=ccf_scratch.data),
+               ω_x=Field(ω_x, data=cff_scratch.data),
                tke=tke,
                ε=ε,
                shearprod_y=shearprod_y,
                shearprod_z=shearprod_z,
-               sponge_dissip=ComputedField(sponge_dissip, data=ccc_scratch.data),
+               sponge_dissip=Field(sponge_dissip, data=ccc_scratch.data),
                )
     
     if LES
@@ -127,8 +126,8 @@ function write_to_ds(dsname, varname, data; coords=("xC", "yC", "zC"), dtype=Flo
 end
 
 function save_UB(dsname)
-    Ucf = ComputedField(U+0*u, data=fcc_scratch.data); compute!(Ucf)
-    Bcf = ComputedField(B+0*b, data=ccc_scratch.data); compute!(Ucf)
+    Ucf = Field(U+0*u, data=fcc_scratch.data); compute!(Ucf)
+    Bcf = Field(B+0*b, data=ccc_scratch.data); compute!(Ucf)
 
     write_to_ds(dsname, "U", interior(Ucf), coords=("xF", "yC", "zC"))
     write_to_ds(dsname, "B", interior(Bcf), coords=("xC", "yC", "zC"))

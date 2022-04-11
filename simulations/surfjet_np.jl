@@ -114,11 +114,11 @@ else
 end
 topology = (Periodic, Bounded, Bounded)
 
-grid = RegularRectilinearGrid(size=(Nx÷factor, Ny÷factor, Nz÷factor),
-                              x=(0, Lx),
-                              y=(0, Ly),
-                              z=(-Lz, 0), 
-                              topology=topology)
+grid = RectilinearGrid(arch, size=(Nx÷factor, Ny÷factor, Nz÷factor),
+                       x=(0, Lx),
+                       y=(0, Ly),
+                       z=(-Lz, 0), 
+                       topology=topology)
 @info "" grid
 #-----
 
@@ -131,7 +131,7 @@ y_r = y_0 + √2/4 * σ_y
 z_r = 0
 Ro_r = - √2 * u_0 * (z_0/σ_z-1) * exp(-1/8) / (2*f_0*σ_y)
 Ri_r = N2_inf * σ_z^2 * exp(1/4) / u_0^2
-νh = νz * (grid.Δy / grid.Δz)^(4/3)
+νh = νz * (grid.Δyᵃᶜᵃ / grid.Δzᵃᵃᶜ)^(4/3)
 
 secondary_params = merge((LES=Int(LES), ρ_0=ρ₀, b_0=b₀,), (;y_r, z_r, Ro_r, Ri_r, T_inertial, νh))
 
@@ -219,7 +219,7 @@ if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
     νₘ, κₘ = 1.0e-6, 1.5e-7
     if AMD
-        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ)
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cn=0.1)
     else
         closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ)
     end
@@ -227,8 +227,7 @@ else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
     closure = AnisotropicDiffusivity(νh=νh, κh=νh, νz=νz, κz=νz)
 end
-model = NonhydrostaticModel(architecture = arch,
-                            grid = grid,
+model = NonhydrostaticModel(grid = grid,
                             advection = WENO5(),
                             timestepper = :RungeKutta3,
                             coriolis = occursin("slosh", lowercase(simname)) ? FPlane(f=0) : FPlane(f=f₀), # do we want sloshing?
@@ -256,10 +255,10 @@ model.velocities.w.data.parent .-= w̄
 # Define time-stepping
 #++++
 u_scale = abs(u₀)
-Δt = 1/2 * min(grid.Δz, grid.Δy) / u_scale
+Δt = 1/2 * min(grid.Δzᵃᵃᶜ, grid.Δyᵃᶜᵃ) / u_scale
 wizard = TimeStepWizard(cfl=0.9,
                         diffusive_cfl=0.9,
-                        Δt=Δt, max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
+                        max_change=1.02, min_change=0.2, max_Δt=Inf, min_Δt=0.1seconds)
 #----
 
 
@@ -273,12 +272,16 @@ end
 include("diagnostics.jl")
 start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
-simulation = Simulation(model, Δt=wizard, 
+simulation = Simulation(model, Δt=Δt, 
                         stop_time=stop_time,
                         wall_time_limit=23.5hours,
-                        iteration_interval=1,
-                        progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time),
                         stop_iteration=Inf,)
+
+simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(1))
+
+progress=SingleLineProgressMessenger(LES=LES, initial_wall_time_seconds=start_time)
+simulation.callbacks[:messenger] = Callback(progress, IterationInterval(10))
+
 @info "" simulation
 #-----
 

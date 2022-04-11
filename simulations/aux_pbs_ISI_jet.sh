@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #PBS -A UMCP0012
-#PBS -N PNN_CIfront1_AMD
+#PBS -N PNN_SIfront4_AMD_f8
 #PBS -k eod
-#PBS -o logs/PNN_CIfront1_AMD.out
-#PBS -e logs/PNN_CIfront1_AMD.err
+#PBS -o logs/PNN_SIfront4_AMD_f8.out
+#PBS -e logs/PNN_SIfront4_AMD_f8.err
 #PBS -l walltime=24:00:00
 #PBS -q casper
 #PBS -l select=1:ncpus=1:ngpus=1
@@ -20,7 +20,7 @@ module li
 
 #/glade/u/apps/ch/opt/usr/bin/dumpenv # Dumps environment (for debugging with CISL support)
 
-export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia_bkp"
+export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia"
 
 peak_memusage.exe julia --project \
-    surfjet_np.jl --simname=PNN_CIfront1_AMD --factor=1 2>&1 | tee out/PNN_CIfront1_AMD.out
+    surfjet_np.jl --simname=PNN_SIfront4_AMD_f8 --factor=1 2>&1 | tee out/PNN_SIfront4_AMD_f8.out
