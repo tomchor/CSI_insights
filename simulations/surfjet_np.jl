@@ -24,7 +24,7 @@ function parse_command_line_arguments()
 
         "--simname"
             help = "Setup and name of jet in jetinfo.jl"
-            default = "PNN_CItest1"
+            default = "PNN_CItest1_AMD_f8"
             arg_type = String
     end
     return parse_args(settings)
@@ -37,21 +37,13 @@ simname = args["simname"]
 
 #++++ Figure out modifiers
 sep = "_"
-try
-    global topology, jet, modifier = split(simname, sep)
-    global AMD = modifier=="AMD" ? true : false
-    global noflux = modifier=="NF" ? true : false
-    global f2 = modifier=="f2" ? true : false
-    global f4 = modifier=="f4" ? true : false
-    global f8 = modifier=="f8" ? true : false
-catch e
-    global topology, jet = split(simname, "_")
-    global AMD = false
-    global noflux = false
-    global f2 = false
-    global f4 = false
-    global f8 = false
-end
+
+global topology, jet, modifiers... = split(simname, sep)
+global AMD = "AMD" in modifiers ? true : false
+global noflux = "NF" in modifiers ? true : false
+global f2 = "f2" in modifiers ? true : false
+global f4 = "f4" in modifiers ? true : false
+global f8 = "f8" in modifiers ? true : false
 #----
 
 
