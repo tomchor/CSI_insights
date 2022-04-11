@@ -219,7 +219,7 @@ if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
     νₘ, κₘ = 1.0e-6, 1.5e-7
     if AMD
-        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cb=1)
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ)
     else
         closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ)
     end

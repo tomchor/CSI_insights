@@ -30,7 +30,8 @@ snames = [#"FNN_CIintjet01",
           #"PNN_SIsurfjet4",
           #"PNN_SIsurfjet5",
           #"PNN_SIsurfjet6",
-          "PNN_CIsurfjet1_AMD",
+          "PNN_CIfront1_AMD",
+          "PNN_SIfront4_AMD",
           ]
 #----
 

@@ -21,7 +21,7 @@ snames = [#"PNN_CIfront1",
           #"PNN_SIfront4_f4",
           #"PNN_SIfront4_f8",
           "PNN_CIfront1_AMD",
-          #"PNN_SIfront4_AMD",
+          "PNN_SIfront4_AMD",
           ]
 
 verbose = 1
