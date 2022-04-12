@@ -24,6 +24,13 @@ snames = ["PNN_CIsurfjet1",
           "PNN_SIsurfjet4_f2",
           "PNN_SIsurfjet4_f4",
           "PNN_SIsurfjet4_f8",
+          "PNN_CIfront1_AMD",
+          "PNN_CIfront1_AMD_f2",
+          "PNN_CIfront1_AMD_f4",
+          "PNN_CIfront1_AMD_f8",
+          "PNN_SIfront4_AMD_f2",
+          "PNN_SIfront4_AMD_f4",
+          "PNN_SIfront4_AMD_f8",
           ]
 #----
 

@@ -10,6 +10,7 @@ plt.rcParams['figure.constrained_layout.use'] = True
 # Define dir and file names
 #++++
 path = f"simulations/data/"
+path = f"/glade/u/home/tomasc/scratch_cheyenne/ISI_jet_AMD/simulations/data/"
 snames = [#"FNN_CIintjet01",
           #"FNN_CIsurfjet1",
           #"FNN_CIsurfjet3",
@@ -31,7 +32,11 @@ snames = [#"FNN_CIintjet01",
           #"PNN_SIsurfjet5",
           #"PNN_SIsurfjet6",
           "PNN_CIfront1_AMD",
-          "PNN_SIfront4_AMD",
+          #"PNN_SIfront4_AMD",
+          #"PNN_CIfront1_AMD_f8",
+          #"PNN_SIfront4_AMD_f8",
+          #"PNN_CIfront1_AMD_f4",
+          #"PNN_SIfront4_AMD_f4",
           ]
 #----
 
