@@ -8,9 +8,9 @@ from dask.diagnostics import ProgressBar
 #++++ Define directory and simulation name
 path = f"simulations/data/"
 snames = [#"FNN_CIintjet01",
-          #"FNN_CIsurfjet1",
-          "FNN_CIsurfjet3",
-          #"FNN_SIsurfjet4",
+          #"FNN_CIfront1",
+          "FNN_CIfront3",
+          #"FNN_SIfront4",
           ]
 #----
 
@@ -39,17 +39,17 @@ for sname in snames:
         t_max2 = 3.1
         window = dict(y=slice(6200, 7000), z=slice(-300, -200))
 
-    elif sname == "FNN_CIsurfjet1":
+    elif sname == "FNN_CIfront1":
         t_max1 = 1.70
         t_max2 = 2.00
         window = dict(y=slice(5200, 5400), z=slice(-40, 0))
 
-    elif sname == "FNN_CIsurfjet3":
+    elif sname == "FNN_CIfront3":
         t_max1 = 1.40
         t_max2 = 1.65
         window = dict(y=slice(4000, 4500), z=slice(-20, 0))
 
-    elif sname == "FNN_SIsurfjet4":
+    elif sname == "FNN_SIfront4":
         t_max1 = 0.90
         t_max2 = 1.25
         window = dict(y=slice(3700, 3900), z=slice(None, -20))

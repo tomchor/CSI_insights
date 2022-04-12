@@ -12,8 +12,8 @@ from cmocean import cm
 #++++ Define directory and simulation name
 dirname = "ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-snames = ["PNN_CIsurfjet1",
-          "PNN_SIsurfjet4",
+snames = ["PNN_CIfront1",
+          "PNN_SIfront4",
           ]
 #----
 

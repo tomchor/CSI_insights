@@ -10,9 +10,9 @@ dirname = "ISI_jet"
 #dirname = "testing_ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
 snames = [#"FNN_CIintjet01",
-          "FNN_CIsurfjet1",
-          "FNN_CIsurfjet3",
-          "FNN_SIsurfjet4",
+          "FNN_CIfront1",
+          "FNN_CIfront3",
+          "FNN_SIfront4",
           ]
 #----
 

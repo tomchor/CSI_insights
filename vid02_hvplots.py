@@ -15,7 +15,7 @@ import hvplot.xarray
 dirname = "inst_2dbounded"
 dirname = "CIinst_2D"
 path = f"../{dirname}/"
-fname = "instFNN_SIsurfjet4"
+fname = "instFNN_SIfront4"
 #----
 
 # Open dataset

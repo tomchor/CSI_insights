@@ -13,5 +13,6 @@ slurm-*.out
 *.jld2
 *.out
 *.err
+*.mp4
 output.out
 __pycache__/*

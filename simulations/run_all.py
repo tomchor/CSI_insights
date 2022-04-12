@@ -55,7 +55,7 @@ module li
 export JULIA_DEPOT_PATH="/glade/work/tomasc/.julia"
 
 peak_memusage.exe julia --project \
-    surfjet_np.jl --simname={0} --factor=1 2>&1 | tee out/{0}.out
+    front_np.jl --simname={0} --factor=1 2>&1 | tee out/{0}.out
 """
 
 for sname in snames:

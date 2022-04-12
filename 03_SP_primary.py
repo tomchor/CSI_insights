@@ -6,19 +6,19 @@ from aux00_utils import open_simulation
 
 #++++ Define directory and simulation name
 path = f"simulations/data/"
-snames = [#"FNN_CIsurfjet1",
-          #"FNN_SIsurfjet4",
-          "PNN_CIsurfjet1",
-          "PNN_CIsurfjet2",
-          "PNN_CIsurfjet3",
-          "PNN_CIsurfjet4",
-          "PNN_CIsurfjet5",
-          "PNN_SIsurfjet1",
-          "PNN_SIsurfjet2",
-          "PNN_SIsurfjet3",
-          "PNN_SIsurfjet4",
-          "PNN_SIsurfjet5",
-          "PNN_SIsurfjet6",
+snames = [#"FNN_CIfront1",
+          #"FNN_SIfront4",
+          "PNN_CIfront1",
+          "PNN_CIfront2",
+          "PNN_CIfront3",
+          "PNN_CIfront4",
+          "PNN_CIfront5",
+          "PNN_SIfront1",
+          "PNN_SIfront2",
+          "PNN_SIfront3",
+          "PNN_SIfront4",
+          "PNN_SIfront5",
+          "PNN_SIfront6",
           ]
 #----
 

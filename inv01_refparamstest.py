@@ -10,20 +10,20 @@ from aux01_physfuncs import (get_ref_quantities, adjust_variables,
 #++++ Define directory and simulation name
 dirname = "ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-snames = ["PNN_CIsurfjet1",
-          #"PNN_CIsurfjet2",
-          #"PNN_CIsurfjet3",
-          #"PNN_CIsurfjet4",
-          #"PNN_CIsurfjet5",
-          #"PNN_SIsurfjet1",
-          #"PNN_SIsurfjet2",
-          "PNN_SIsurfjet3",
-          #"PNN_SIsurfjet4",
-          #"PNN_SIsurfjet5",
-          #"PNN_SIsurfjet6",
+snames = ["PNN_CIfront1",
+          #"PNN_CIfront2",
+          #"PNN_CIfront3",
+          #"PNN_CIfront4",
+          #"PNN_CIfront5",
+          #"PNN_SIfront1",
+          #"PNN_SIfront2",
+          "PNN_SIfront3",
+          #"PNN_SIfront4",
+          #"PNN_SIfront5",
+          #"PNN_SIfront6",
           "PNN_CIintjet01",
-          #"FNN_CIsurfjet1",
-          #"FNN_SIsurfjet4",
+          #"FNN_CIfront1",
+          #"FNN_SIfront4",
           ]
 #----
 
@@ -65,7 +65,7 @@ for sname in snames:
 
     params_sim = get_relevant_attrs(avg)
     params_bulk = get_bulk_parameters(avg)
-    if "surfjet" in sname:
+    if "front" in sname:
         setup="front"
         IC = get_IC_front(y=avg.yF, z=avg.zF, 
                           y_0=avg.y_0, z_0=avg.z_0, 

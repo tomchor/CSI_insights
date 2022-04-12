@@ -7,15 +7,15 @@ from aux00_utils import open_simulation
 #++++ Define directory and simulation name
 dirname = "ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-snames = ["FNN_CIsurfjet1",
-          #"FNN_SIsurfjet4",
+snames = ["FNN_CIfront1",
+          #"FNN_SIfront4",
           "PNN_CIintjet01",
-          #"PNN_CIsurfjet1",
-          #"PNN_SIsurfjet2",
-          #"PNN_SIsurfjet3",
-          #"PNN_SIsurfjet4",
-          #"PNN_SIsurfjet5",
-          #"PNN_SIsurfjet6",
+          #"PNN_CIfront1",
+          #"PNN_SIfront2",
+          #"PNN_SIfront3",
+          #"PNN_SIfront4",
+          #"PNN_SIfront5",
+          #"PNN_SIfront6",
           ]
 #----
 

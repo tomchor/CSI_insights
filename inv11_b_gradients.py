@@ -10,8 +10,8 @@ from cmocean import cm
 #++++ Define directory and simulation name
 dirname = "ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-snames = ["PNN_CIsurfjet1",
-          "PNN_SIsurfjet4",
+snames = ["PNN_CIfront1",
+          "PNN_SIfront4",
           ]
 #----
 
@@ -38,7 +38,7 @@ for i, sname in enumerate(snames):
 
     #++++ Get subdomain
     print("Getting a σ_y-wide slice of the domain")
-    if "surfjet" in sname:
+    if "front" in sname:
         y_r = 1/4 * np.sqrt(2) * out.σ_y + out.y_0
     else:
         y_r = 1/2 * np.sqrt(2) * out.σ_y + out.y_0

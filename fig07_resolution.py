@@ -9,19 +9,19 @@ from aux02_plotting import letterize, color_base, marker_base
 
 
 #++++ Define directory and simulation name
-Cnames = ["PNN_CIsurfjet1",
-          "PNN_CIsurfjet1_f2",
-          "PNN_CIsurfjet1_f4",
-          "PNN_CIsurfjet1_f8",
+Cnames = ["PNN_CIfront1",
+          "PNN_CIfront1_f2",
+          "PNN_CIfront1_f4",
+          "PNN_CIfront1_f8",
           "PNN_CIfront1_AMD",
           "PNN_CIfront1_AMD_f2",
           "PNN_CIfront1_AMD_f4",
           "PNN_CIfront1_AMD_f8",
           ]
-Snames = ["PNN_SIsurfjet4",
-          "PNN_SIsurfjet4_f2",
-          "PNN_SIsurfjet4_f4",
-          "PNN_SIsurfjet4_f8",
+Snames = ["PNN_SIfront4",
+          "PNN_SIfront4_f2",
+          "PNN_SIfront4_f4",
+          "PNN_SIfront4_f8",
           "PNN_SIfront4_AMD_f2",
           "PNN_SIfront4_AMD_f4",
           "PNN_SIfront4_AMD_f8",

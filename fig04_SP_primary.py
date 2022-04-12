@@ -11,8 +11,8 @@ from aux02_plotting import plot_scatter, letterize
 #++++ Define directory and simulation name
 dirname = "ISI_jet"
 path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
-snames = ["PNN_CIsurfjet1",
-          "PNN_SIsurfjet4",
+snames = ["PNN_CIfront1",
+          "PNN_SIfront4",
           ]
 alleffs = xr.load_dataset(f"data/alleffs.nc", decode_times=False)
 allprods = xr.load_dataset("data/allshearprod.nc", decode_times=False)

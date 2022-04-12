@@ -21,28 +21,28 @@ rosetta = dict(σ_y = r"$\sigma_y$ (m)",
                )
 simstone = dict(PNN_ = "",
                 FNN_ = r"2D\_",
-                surfjet = r"front",
+                front = r"front",
                 )
 #----
 
 
 #++++ Choose which simulations are main and which are aux
-main_sims = ["PNN_CIsurfjet1",
-             "PNN_CIsurfjet2",
-             "PNN_CIsurfjet3",
-             "PNN_CIsurfjet4",
-             "PNN_CIsurfjet5",
-             "PNN_SIsurfjet1",
-             "PNN_SIsurfjet2",
-             "PNN_SIsurfjet3",
-             "PNN_SIsurfjet4",
-             "PNN_SIsurfjet5",
-             "PNN_SIsurfjet6",
+main_sims = ["PNN_CIfront1",
+             "PNN_CIfront2",
+             "PNN_CIfront3",
+             "PNN_CIfront4",
+             "PNN_CIfront5",
+             "PNN_SIfront1",
+             "PNN_SIfront2",
+             "PNN_SIfront3",
+             "PNN_SIfront4",
+             "PNN_SIfront5",
+             "PNN_SIfront6",
              ]
 
-aux_sims = ["FNN_CIsurfjet1",
-            "FNN_CIsurfjet3",
-            "FNN_SIsurfjet4",
+aux_sims = ["FNN_CIfront1",
+            "FNN_CIfront3",
+            "FNN_SIfront4",
             #"PNN_CIintjet01",
             ]
 #----
