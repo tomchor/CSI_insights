@@ -20,14 +20,14 @@ snames = [#"PNN_CIfront1",
           #"PNN_SIfront4_f2",
           #"PNN_SIfront4_f4",
           #"PNN_SIfront4_f8",
-          #"PNN_CIfront1_AMD",
-          "PNN_CIfront1_AMD_f2",
-          "PNN_CIfront1_AMD_f4",
-          "PNN_CIfront1_AMD_f8",
-          #"PNN_SIfront4_AMD",
-          "PNN_SIfront4_AMD_f2",
-          "PNN_SIfront4_AMD_f4",
-          "PNN_SIfront4_AMD_f8",
+          "PNN_CIfront1_AMD",
+          #"PNN_CIfront1_AMD_f2",
+          #"PNN_CIfront1_AMD_f4",
+          #"PNN_CIfront1_AMD_f8",
+          "PNN_SIfront4_AMD",
+          #"PNN_SIfront4_AMD_f2",
+          #"PNN_SIfront4_AMD_f4",
+          #"PNN_SIfront4_AMD_f8",
           ]
 
 verbose = 1
@@ -66,7 +66,7 @@ peak_memusage.exe julia --project \
 
 for sname in snames:
     if remove_checkpoints:
-        cmd0 = f"rm data/chk.{sname}*.nc"
+        cmd0 = f"rm data/chk.{sname}*.jld2"
         if verbose>0: print(cmd0)
         system(cmd0)
     auxfile1 = pbs_script.format(sname)
