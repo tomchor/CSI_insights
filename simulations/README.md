@@ -24,10 +24,15 @@ machine imprecision.
 
 ## Running the simulations
 
+### Installation
+
 Before running the simulations you'll need to download and install the necessary packages (which are
 described in `Project.toml` and `Manifest.toml`). This is done automatically by Julia(instructions
 [here](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project)) and should not
 be done manually!
+
+
+### Running instructions
 
 After the packages are properly installed, in order to properly run the simulations you'll need to
 specify a few options. The command below has an example:
@@ -49,8 +54,10 @@ the file `jetinfo.jl`.
 `--factor=1` is the "coarsening factor". Setting a value of 1 runs a simulation with full
 resolution. Factor of 2 halves the grid spacing. Factor of 4 divides the spacings by 4 and so on.
 
+### Notes
 
 This code will run either on a CPU or on a GPU, however, the full (i.e. factor=1) simulations are
 large (~130 million points) so they are too large to run on a CPU and a GPU is needed.
 
-
+The script expects local directories named `data`, `out` and `logs` to be present locally. So in order to
+run properly these have to created (on linux: `mkdir data out logs`).
