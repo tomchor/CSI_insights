@@ -27,9 +27,8 @@ machine imprecision.
 ### Installation
 
 Before running the simulations you'll need to download and install the necessary packages (which are
-described in `Project.toml` and `Manifest.toml`). This is done automatically by Julia(instructions
-[here](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project)) and should not
-be done manually!
+described in `Project.toml` and `Manifest.toml`). This is done automatically by Julia (instructions
+[here](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project))!
 
 
 ### Running instructions
@@ -46,10 +45,11 @@ and `Manifest.toml`.
 
 `surfjet_np.jl` is the main script.
 
-`--simname=PNN_CIfront1` is the name of the simulation you want to run. The prefix `PNN` means it
-should be run with a periodic, nonperiodic, nonperiodic. The other option is `FNN` which means flat,
-nonperiodic, nonperiodic (which runs a 2D simulation). The rest of the name needs to be defined in
-the file `jetinfo.jl`.
+`--simname=PNN_CIfront1` is the name of the simulation you want to run. The prefix `PNN` means the
+simulation domain will be periodic, nonperiodic, nonperiodic (therefore 3D). The other option is
+`FNN` which means flat, nonperiodic, nonperiodic (which runs a 2D simulation). The rest of the name
+(in this case `CIfront1`) needs to be defined in the file `jetinfo.jl` and the names already defined
+match the names in the paper.
 
 `--factor=1` is the "coarsening factor". Setting a value of 1 runs a simulation with full
 resolution. Factor of 2 halves the grid spacing. Factor of 4 divides the spacings by 4 and so on.

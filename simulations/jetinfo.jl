@@ -1,50 +1,5 @@
 using Parameters
 
-@with_kw struct InteriorJetSimulations
-    f_0 = 1e-4
-    Ny = 2^14
-    Nz = 2^11
-    Ly = 15_000 # m
-    Lz = 500 # m
-    νz = 1e-3
-    sponge_frac = 1/16
-    three_d = false
-
-    JD15intexp = (name = "JD15exp",
-                  f_0 = f_0,
-                  u_0 = 0.35e0,
-                  N2_inf = 4.9e-5,
-                  Ny = Ny,
-                  Nz = Nz,
-                  Ly = 5000,
-                  Lz = Lz,
-                  σ_y = 1600,
-                  σ_z = 80,
-                  y_0 = Ly/2,
-                  z_0 = -Lz/2,
-                  νz = νz,
-                  sponge_frac = sponge_frac,
-                  )
-
-    CIintjet01 = (name = "CIintjet01",
-                  f_0 = f_0,
-                  u_0 = -0.4, # m/s
-                  N2_inf = 4e-5, # 1/s²
-                  Ny = three_d ? Ny : 28*2^9,
-                  Nz = three_d ? Nz : 2^9,
-                  Ly = 12_000,
-                  Lz = Lz,
-                  σ_y = 1600, # m
-                  σ_z = 80, # m
-                  y_0 = 0.4 * 12_000, # m
-                  z_0 = -Lz/2, # m
-                  νz = νz,
-                  sponge_frac = sponge_frac,
-                  )
-
-end
-
-
 @with_kw struct SurfaceJetSimulations
     f_0 = 1e-4
     Ny = 10*2^9
@@ -258,41 +213,5 @@ end
                   sponge_frac = sponge_frac,
                   )
     
-    
-    
-    Stabfront1 = (name = "Stabfront1",
-                    f_0 = f_0,
-                    u_0 = -0.08,
-                    N2_inf = 1e-5,
-                    Ny = Ny,
-                    Nz = Nz,
-                    Ly = Ly,
-                    Lz = Lz,
-                    σ_y = 1600,
-                    σ_z = 80,
-                    y_0 = +Ly/2,
-                    z_0 = 0,
-                    νz = νz,
-                    sponge_frac = 1/32,
-                    )
-    
-    
-    Sloshfront1 = (name = "Sloshfront1",
-                     f_0 = f_0,
-                     u_0 = -0.08,
-                     N2_inf = 1e-5,
-                     Ny = Ny,
-                     Nz = Nz,
-                     Ly = Ly,
-                     Lz = Lz,
-                     σ_y = 1600,
-                     σ_z = 80,
-                     y_0 = +Ly/2,
-                     z_0 = 0,
-                     νz = νz,
-                     sponge_frac = 1/32,
-                     )
-
-
 end
 
