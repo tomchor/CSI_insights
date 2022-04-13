@@ -9,22 +9,23 @@ from aux02_plotting import letterize, color_base, marker_base
 
 
 #++++ Define directory and simulation name
-Cnames = ["PNN_CIfront1",
-          "PNN_CIfront1_f2",
-          "PNN_CIfront1_f4",
-          "PNN_CIfront1_f8",
-          "PNN_CIfront1_AMD",
-          "PNN_CIfront1_AMD_f2",
-          "PNN_CIfront1_AMD_f4",
-          "PNN_CIfront1_AMD_f8",
+Cnames = [["PNN_CIfront1",
+           "PNN_CIfront1_f2",
+           "PNN_CIfront1_f4",
+           "PNN_CIfront1_f8",],
+          ["PNN_CIfront1_AMD",
+           "PNN_CIfront1_AMD_f2",
+           "PNN_CIfront1_AMD_f4",
+           "PNN_CIfront1_AMD_f8",]
           ]
-Snames = ["PNN_SIfront4",
-          "PNN_SIfront4_f2",
-          "PNN_SIfront4_f4",
-          "PNN_SIfront4_f8",
-          "PNN_SIfront4_AMD_f2",
-          "PNN_SIfront4_AMD_f4",
-          "PNN_SIfront4_AMD_f8",
+Snames = [["PNN_SIfront4",
+           "PNN_SIfront4_f2",
+           "PNN_SIfront4_f4",
+           "PNN_SIfront4_f8",],
+          ["PNN_SIfront4_AMD",
+           "PNN_SIfront4_AMD_f2",
+           "PNN_SIfront4_AMD_f4",
+           "PNN_SIfront4_AMD_f8",]
           ]
 snames = [Cnames, Snames]
 alleffs = xr.load_dataset(f"data_post/alleffs.nc", decode_times=False)
@@ -47,17 +48,24 @@ axesf = axes.flatten()
 
 
 #+++ Plot!
-for i, lname in enumerate(snames):
-    dsall = alleffs.sel(simulation = lname)
-    dsall["Δz/Lo"] = alleffs.Δz / alleffs.Lo
-    dsall["Δz/Lo_avg"] = alleffs.Δz / alleffs.Lo_avg
-    dsall["Δz/Lo_inf"] = alleffs.Δz / alleffs.Lo_inf
+for i, lnames in enumerate(snames):
+    for j, lnames2 in enumerate(lnames):
+        print(lnames2)
+        dsall = alleffs.sel(simulation = lnames2)
+        dsall["Δz/Lo"] = alleffs.Δz / alleffs.Lo
+        dsall["Δz/Lo_avg"] = alleffs.Δz / alleffs.Lo_avg
+        dsall["Δz/Lo_inf"] = alleffs.Δz / alleffs.Lo_inf
 
-    #dsall.plot.scatter(ax=axesf[0], x="Δz", y="Δz/Lo", color=color_base[i], marker="x", label=lname[0])
-    dsall.plot.scatter(ax=axesf[0], x="Δz", y="Δz/Lo_inf", color=color_base[i], marker="o", label=lname[0])
-    #dsall.plot.scatter(ax=ax[0], x="Δz", y="Δz/Lo_avg",)
+        if "AMD" in lnames2[0]:
+            marker = "x"
+        else:
+            marker = "o"
 
-    dsall.plot.scatter(ax=axesf[1], x="Δz", y="Γ_last", color=color_base[i], marker="o", label=lname[0])
+        #dsall.plot.scatter(ax=axesf[0], x="Δz", y="Δz/Lo", color=color_base[i], marker="x", label=lnames2[0])
+        dsall.plot.scatter(ax=axesf[0], x="Δz", y="Δz/Lo_inf", color=color_base[i], marker=marker, label=lnames2[0])
+        #dsall.plot.scatter(ax=ax[0], x="Δz", y="Δz/Lo_avg",)
+
+        dsall.plot.scatter(ax=axesf[1], x="Δz", y="Γ_last", color=color_base[i], marker=marker, label=lnames2[0])
 #----
 
 #++++ Make it pretty
