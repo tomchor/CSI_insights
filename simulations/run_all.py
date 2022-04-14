@@ -20,14 +20,30 @@ snames = [#"PNN_CIfront1",
           #"PNN_SIfront4_f2",
           #"PNN_SIfront4_f4",
           #"PNN_SIfront4_f8",
-          "PNN_CIfront1_AMD2",
+          #"PNN_CIfront1_AMD",
           #"PNN_CIfront1_AMD_f2",
           #"PNN_CIfront1_AMD_f4",
           #"PNN_CIfront1_AMD_f8",
-          "PNN_SIfront4_AMD2",
+          #"PNN_SIfront4_AMD",
           #"PNN_SIfront4_AMD_f2",
-          #"PNN_SIfront4_AMD_f4",
           #"PNN_SIfront4_AMD_f8",
+          #"PNN_SIfront4_AMD_f4",
+          "PNN_CIfront1_AMD2",
+          #"PNN_CIfront1_AMD2_f2",
+          #"PNN_CIfront1_AMD2_f4",
+          #"PNN_CIfront1_AMD2_f8",
+          "PNN_SIfront4_AMD2",
+          #"PNN_SIfront4_AMD2_f2",
+          #"PNN_SIfront4_AMD2_f4",
+          #"PNN_SIfront4_AMD2_f8",
+          #"PNN_CIfront1_AMD3",
+          #"PNN_CIfront1_AMD3_f2",
+          #"PNN_CIfront1_AMD3_f4",
+          #"PNN_CIfront1_AMD3_f8",
+          #"PNN_SIfront4_AMD3",
+          #"PNN_SIfront4_AMD3_f2",
+          #"PNN_SIfront4_AMD3_f8",
+          #"PNN_SIfront4_AMD3_f4",
           ]
 
 verbose = 1
@@ -52,7 +68,7 @@ r"""#!/bin/bash -l
 # Clear the environment from any previously loaded modules
 module purge
 module load ncarenv/1.3 gnu/9.1.0 ncarcompilers/0.5.0
-module load netcdf/4.7.4 openmpi/4.1.0 julia/1.6.0
+module load netcdf/4.7.4 openmpi/4.1.1 julia/1.6.0
 module load peak_memusage
 module li
 
