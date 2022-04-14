@@ -56,8 +56,9 @@ resolution. Factor of 2 halves the grid spacing. Factor of 4 divides the spacing
 
 ### Notes
 
-This code will run either on a CPU or on a GPU, however, the full (i.e. factor=1) simulations are
-large (~130 million points) so they are too large to run on a CPU and a GPU is needed.
+This code will run either on a CPU or on a GPU. In fact the code automatically detects if a GPU is available
+and uses it if that's the case, defaulting to a CPU run if that's not the case. However, the full (i.e. factor=1) 
+simulations are large (~130 million points) so they are too large to run on a CPU and a GPU is needed.
 
 The script expects local directories named `data`, `out` and `logs` to be present locally. So in order to
 run properly these have to created (on linux: `mkdir data out logs`).
