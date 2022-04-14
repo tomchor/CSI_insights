@@ -33,7 +33,7 @@ B, = Oceananigans.Fields.BackgroundTracerFields((b=b_g,), (:b,), model.grid, mod
 
 if LES
     νₑ = νz = model.diffusivity_fields.νₑ
-    if AMD
+    if AMD | AMD2 | AMD3
         κₑ = κz = model.diffusivity_fields.κₑ.b
     else
         κₑ = κz = Field(model.diffusivity_fields.κₑ.b)
@@ -79,9 +79,6 @@ function get_outputs_tuple(model; LES=false)
     sponge_dissip = @at (Center, Center, Center) (u_dissip + v_dissip + w_dissip)
 
     PV = Field(ErtelPotentialVorticity(model), data=fff_scratch.data)
-
-    dvpdy = Field(YPressureRedistribution(model), data=ccc_scratch.data)
-    dwpdz = Field(ZPressureRedistribution(model), data=ccc_scratch.data)
     
     shearprod_y = Field(YShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
     shearprod_z = Field(ZShearProduction(model, u-U, v, w, U, 0, 0), data=ccc_scratch.data)
@@ -94,11 +91,8 @@ function get_outputs_tuple(model; LES=false)
                v=v,
                w=w,
                b=b,
-               p=Field(p, data=ccc_scratch.data),
                wb_res=Field(wb_res, data=ccc_scratch.data),
                PV=PV,
-               dwpdz=dwpdz,
-               dvpdy=dvpdy,
                dbdz=Field(dbdz, data=ccf_scratch.data),
                ω_x=Field(ω_x, data=cff_scratch.data),
                tke=tke,
@@ -189,7 +183,7 @@ function construct_outputs(model, simulation;
     @info "Setting up vid writer"
     delete(nt::NamedTuple{names}, keys) where names = NamedTuple{filter(x -> x ∉ keys, names)}(nt)
     
-    outputs_vid = delete(outputs_snap, (:dwpdz, :dvpdy, :p))
+    outputs_vid = outputs_snap
     if ndims==2 outputs_vid = merge(outputs_vid, (b_sorted=sort_b,)) end
     dims = Dict("b_sorted" => ("xC", "yC", "zC"),)
 

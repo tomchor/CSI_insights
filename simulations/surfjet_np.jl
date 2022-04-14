@@ -39,7 +39,9 @@ simname = args["simname"]
 sep = "_"
 
 global topology, jet, modifiers... = split(simname, sep)
-global AMD = "AMD" in modifiers ? true : false
+global AMD  =  "AMD" in modifiers ? true : false
+global AMD2 = "AMD2" in modifiers ? true : false
+global AMD3 = "AMD3" in modifiers ? true : false
 global noflux = "NF" in modifiers ? true : false
 global f2 = "f2" in modifiers ? true : false
 global f4 = "f4" in modifiers ? true : false
@@ -211,9 +213,13 @@ if LES
     import Oceananigans.TurbulenceClosures: SmagorinskyLilly, AnisotropicMinimumDissipation
     νₘ, κₘ = 1.0e-6, 1.5e-7
     if AMD
-        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cn=0.1)
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cn=nothing, Pr=nothing)
+    elseif AMD2
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cn=0.1, Pr=nothing)
+    elseif AMD3
+        closure = AnisotropicMinimumDissipation(ν=νₘ, κ=κₘ, Cn=nothing, Pr=1)
     else
-        closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ)
+        closure = SmagorinskyLilly(C=0.16, ν=νₘ, κ=κₘ, Pr=1)
     end
 else
     import Oceananigans.TurbulenceClosures: AnisotropicDiffusivity, IsotropicDiffusivity
@@ -266,7 +272,7 @@ start_time = 1e-9*time_ns()
 using Oceanostics: SingleLineProgressMessenger
 simulation = Simulation(model, Δt=Δt, 
                         stop_time=stop_time,
-                        wall_time_limit=23.5hours,
+                        wall_time_limit=13.5hours,
                         stop_iteration=Inf,)
 
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(1))
