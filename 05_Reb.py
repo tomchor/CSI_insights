@@ -13,7 +13,7 @@ if __name__ == '__main__':
 else:
     compute_flags = dict()
 
-extra = "_cond"
+extra = "_mask"
 #----
 
 #++++ Define directory and simulation name
@@ -30,6 +30,36 @@ snames = ["PNN_CIfront1",
           "PNN_SIfront5",
           "PNN_SIfront6",
           #"PNN_CIintjet01",
+          "PNN_CIfront1_f2",
+          "PNN_CIfront1_f4",
+          "PNN_CIfront1_f8",
+          "PNN_SIfront4_f2",
+          "PNN_SIfront4_f4",
+          "PNN_SIfront4_f8",
+          "PNN_CIfront1_AMD",
+          "PNN_CIfront1_AMD_f2",
+          "PNN_CIfront1_AMD_f4",
+          "PNN_CIfront1_AMD_f8",
+          "PNN_SIfront4_AMD",
+          "PNN_SIfront4_AMD_f2",
+          "PNN_SIfront4_AMD_f4",
+          "PNN_SIfront4_AMD_f8",
+          "PNN_CIfront1_AMD2",
+          "PNN_CIfront1_AMD2_f2",
+          "PNN_CIfront1_AMD2_f4",
+          "PNN_CIfront1_AMD2_f8",
+          "PNN_SIfront4_AMD2",
+          "PNN_SIfront4_AMD2_f2",
+          "PNN_SIfront4_AMD2_f4",
+          "PNN_SIfront4_AMD2_f8",
+          "PNN_CIfront1_AMD3",
+          "PNN_CIfront1_AMD3_f2",
+          "PNN_CIfront1_AMD3_f4",
+          "PNN_CIfront1_AMD3_f8",
+          "PNN_SIfront4_AMD3",
+          "PNN_SIfront4_AMD3_f2",
+          "PNN_SIfront4_AMD3_f4",
+          "PNN_SIfront4_AMD3_f8",
           ]
 #----
 

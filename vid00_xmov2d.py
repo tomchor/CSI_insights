@@ -37,6 +37,10 @@ snames = [#"FNN_CIintjet01",
           #"PNN_SIfront4_AMD_f8",
           #"PNN_CIfront1_AMD_f4",
           #"PNN_SIfront4_AMD_f4",
+          "PNN_CIfront1_AMD2",
+          "PNN_SIfront4_AMD2",
+          "PNN_CIfront1_AMD3",
+          "PNN_SIfront4_AMD3",
           ]
 #----
 

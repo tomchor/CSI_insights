@@ -13,19 +13,19 @@ Cnames = [["PNN_CIfront1",
            "PNN_CIfront1_f2",
            "PNN_CIfront1_f4",
            "PNN_CIfront1_f8",],
-          ["PNN_CIfront1_AMD",
-           "PNN_CIfront1_AMD_f2",
-           "PNN_CIfront1_AMD_f4",
-           "PNN_CIfront1_AMD_f8",]
+          ["PNN_CIfront1_AMD2",
+           "PNN_CIfront1_AMD2_f2",
+           "PNN_CIfront1_AMD2_f4",
+           "PNN_CIfront1_AMD2_f8",]
           ]
 Snames = [["PNN_SIfront4",
            "PNN_SIfront4_f2",
            "PNN_SIfront4_f4",
            "PNN_SIfront4_f8",],
-          ["PNN_SIfront4_AMD",
-           "PNN_SIfront4_AMD_f2",
-           "PNN_SIfront4_AMD_f4",
-           "PNN_SIfront4_AMD_f8",]
+          ["PNN_SIfront4_AMD2",
+           "PNN_SIfront4_AMD2_f2",
+           "PNN_SIfront4_AMD2_f4",
+           "PNN_SIfront4_AMD2_f8",]
           ]
 snames = [Cnames, Snames]
 alleffs = xr.load_dataset(f"data_post/alleffs.nc", decode_times=False)
@@ -56,7 +56,7 @@ for i, lnames in enumerate(snames):
         dsall["Δz/Lo_avg"] = alleffs.Δz / alleffs.Lo_avg
         dsall["Δz/Lo_inf"] = alleffs.Δz / alleffs.Lo_inf
 
-        if "AMD" in lnames2[0]:
+        if "AMD2" in lnames2[0]:
             marker = "x"
         else:
             marker = "o"
