@@ -6,6 +6,9 @@ in Julia, the main package is
 [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/stable/), and simulations output
 NetCDF files.
 
+This README assumes that the user is familiar with the paper to understand what simulations are being run.
+If you don't have access to the paper, please contact me and I'd be happy to send you a copy.
+
 ## Organization
 
 - Files `Project.toml` and `Manifest.toml` ensure a reproducible Julia environment that should
@@ -29,6 +32,9 @@ machine imprecision.
 Before running the simulations you'll need to download and install the necessary packages (which are
 described in `Project.toml` and `Manifest.toml`). This is done automatically by Julia (instructions
 [here](https://pkgdocs.julialang.org/v1/environments/#Using-someone-else's-project))!
+
+The script expects a local directory named `data` to be present locally in order to write output files there. So in order to
+run properly these have to created (on linux: `mkdir data`).
 
 
 ### Running instructions
@@ -60,5 +66,3 @@ This code will run either on a CPU or on a GPU. In fact the code automatically d
 and uses it if that's the case, defaulting to a CPU run if that's not the case. However, the full (i.e. factor=1) 
 simulations are large (~130 million points) so they are too large to run on a CPU and a GPU is needed.
 
-The script expects local directories named `data`, `out` and `logs` to be present locally. So in order to
-run properly these have to created (on linux: `mkdir data out logs`).
