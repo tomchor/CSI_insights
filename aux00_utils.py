@@ -84,6 +84,8 @@ pnames = dict(PNN_CIfront1="CIfront1",
               FNN_CIfront3="2D_CIfront3",
               FNN_SIfront4="2D_SIfront4",
               FNN_CIintjet01="2D_CIintjet1",
+              PNN_CIfront1_AMD="CIfront1_AMD",
+              PNN_SIfront4_AMD="SIfront4_AMD",
               )
 
 main_sims = ["PNN_CIfront1",
