@@ -15,5 +15,6 @@ slurm-*.out
 *.err
 *.mp4
 *.pdf
+*.png
 output.out
 __pycache__/*
