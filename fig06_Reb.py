@@ -116,24 +116,24 @@ def add_slope(ax, coeff=1e-1, slope=-1/2, log_xlim=(-1, 0), xneg=False):
 #----
 
 
-allparams = xr.open_dataset("data_post/allparams.nc")
+allparams = xr.open_dataset("data/allparams.nc")
 for i, sname in enumerate(snames):
     print(f"Opening {sname}")
 
     #+++++ Load datasets
     if extra:
-        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}{extra}.nc")
+        ds_Reb = xr.load_dataset(f"data/Reb_{sname}{extra}.nc")
     else:
-        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}.nc")
-    dseff = xr.load_dataset(f"data_post/efficiencies_{sname}.nc").squeeze()
+        ds_Reb = xr.load_dataset(f"data/Reb_{sname}.nc")
+    dseff = xr.load_dataset(f"data/efficiencies_{sname}.nc").squeeze()
 
-    grid_avg, avg = open_simulation(path+f"avg.{sname}.nc", 
-                                    use_inertial_periods=True,
-                                    topology=sname[:3],
-                                    squeeze=True,
-                                    open_dataset_kwargs=dict(chunks=dict(time=1)),
-                                    )
-    avg = adjust_variables(avg)
+    #grid_avg, avg = open_simulation(path+f"avg.{sname}.nc", 
+    #                                use_inertial_periods=True,
+    #                                topology=sname[:3],
+    #                                squeeze=True,
+    #                                open_dataset_kwargs=dict(chunks=dict(time=1)),
+    #                                )
+    #avg = adjust_variables(avg)
     #-----
 
     #+++++ Make plotting easier
@@ -193,11 +193,11 @@ for ax in axesf_all:
 axes_all[0,0].set_ylim(3e-2, None)
 axes_all[0,2].set_ylim(3e-2, None)
 
-axesf_all[0].legend(loc="upper left", bbox_to_anchor=(.9, 1), fontsize=10)
-axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.9, 1), fontsize=10)
+axesf_all[0].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
+axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
 #----
 
 #++++ Save plot
-letterize(axesf_all, 0.05, 0.9, fontsize=14)
+letterize(axesf_all, 0.05, 0.05, fontsize=14)
 fig_all.savefig(f"figures_paper/eff_Reb_all{extra}.pdf")
 #----

@@ -29,13 +29,13 @@ axesf = axes.flatten()
 for i, sname in enumerate(snames):
     #++++ Open datasets avg and vid
     print(sname)
-    grid_vid, vid = open_simulation(path+f"vid.{sname}.nc", 
-                                    use_inertial_periods=True,
-                                    topology=sname[:3],
-                                    squeeze=True,
-                                    load=False,
-                                    open_dataset_kwargs=dict(chunks=dict(time=1)),
-                                    )
+    #grid_vid, vid = open_simulation(path+f"vid.{sname}.nc", 
+    #                                use_inertial_periods=True,
+    #                                topology=sname[:3],
+    #                                squeeze=True,
+    #                                load=False,
+    #                                open_dataset_kwargs=dict(chunks=dict(time=1)),
+    #                                )
     ds_eff = xr.load_dataset(f"data/efficiencies_{sname}.nc", decode_times=False)
     #-----
 
@@ -66,7 +66,7 @@ for ax in axesf:
 #----
 
 #-----
-letterize(axesf, 0.05, 0.9, fontsize=14)
+letterize(axesf, 0.03, 0.9, fontsize=14)
 fig.savefig(f"figures_paper/dissip_evolution.pdf")
 #-----
 

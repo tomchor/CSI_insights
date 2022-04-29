@@ -89,7 +89,7 @@ plot_scatter(dsall, ax=axesf[1], x="ratio_approx", y="γ_max", hue="simulation",
 for ax in axesf:
     ax.set_ylim(0, None)
     ax.grid(True)
-    ax.set_ylabel("Mixing efficiency")
+    ax.set_ylabel("Cumulative mixing efficiency ($\Gamma_\infty$)")
     ax.set_title("")
 axesf[1].legend(handles, labels, loc="upper left", bbox_to_anchor=(1., 1), fontsize='x-small', labelspacing=1.1)
 
@@ -99,7 +99,7 @@ axesf[1].set_xlabel(dsall.ratio_approx.attrs["long_name"])
 
 #-----
 letterize(axesf, 0.1, 0.9, fontsize=14)
-fig.suptitle("Mixing efficiency as a function of the ratio\nbetween horizontal and vertical shear production rates")
+fig.suptitle("Cumulative mixing efficiency as a function of the ratio\nbetween horizontal and vertical shear production rates")
 fig.savefig(f"figures_paper/effs_vs_SP.pdf")
 #-----
 
