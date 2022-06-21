@@ -126,9 +126,9 @@ for i, sname in enumerate(snames):
         print("Getting masks for conditional averaging")
         ε_c = 1e-10
         mask_ccc = out.ε > ε_c
-        mask_ccf = subgrid_out.interp(out.ε, 'z', boundary="extrapolate") > ε_c
-        mask_cfc = subgrid_out.interp(out.ε, 'y', boundary="extrapolate") > ε_c
-        mask_fcc = subgrid_out.interp(out.ε, 'x', boundary="extrapolate") > ε_c
+        mask_ccf = subgrid_out.interp(out.ε, 'z', boundary="extend") > ε_c
+        mask_cfc = subgrid_out.interp(out.ε, 'y', boundary="extend") > ε_c
+        mask_fcc = subgrid_out.interp(out.ε, 'x', boundary="extend") > ε_c
 
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):
             out["ε"] = out.ε.where(mask_ccc, drop=True)
@@ -160,10 +160,12 @@ for i, sname in enumerate(snames):
                 ds["ε_mean"] = ε_mask.pnmean(('x', 'y', 'z'))
                 ds["νe_mean"] = νe_mask.pnmean(('x', 'y', 'z'))
                 ds["dbdz_mean"] = dbdz_mask.pnmean(('x', 'y', 'z'))
+                ds["Re_b_strain"] = (ds.ε / ds.ν_e).where(mask_acc, drop=True).pnmean(('x', 'y', 'z')) / ds.N2_inf
         else:
             ds["ε_mean"] = ds.ε.pnmean(('x', 'y', 'z'))
             ds["νe_mean"] = ds.ν_e.pnmean(('x', 'y', 'z'))
             ds["dbdz_mean"] = ds.dbdz.pnmean(('x', 'y', 'z'))
+            ds["Re_b_strain"] = (ds.ε / ds.ν_e).pnmean(('x', 'y', 'z')) / ds.N2_inf
 
         ds["Re_b_avg_sgs"] = ds.ε_mean / (ds.νe_mean * ds.N2_inf)
         ds["Re_b_avg_molec"] = ds.ε_mean / (ν_m * ds.N2_inf)
@@ -171,7 +173,7 @@ for i, sname in enumerate(snames):
         ds["Re_b_point_molec"] = ds.ε_mean / (ν_m * ds.dbdz_mean)
 
         ds["dvdx"] = grid.derivative(ds.v, "x")
-        ds["dudy"] = grid.derivative(ds.u, "y", boundary="extrapolate")
+        ds["dudy"] = grid.derivative(ds.u, "y", boundary="extend")
         ds["Ro"] = (ds.dvdx - ds.dudy)/ds.f_0
         if "mask" in extra:
             with dask.config.set(**{'array.slicing.split_large_chunks': True}):
@@ -180,8 +182,8 @@ for i, sname in enumerate(snames):
         else:
             ds["Ro_mean"] = ds.Ro.pnmean(('x', 'y', 'z'))
 
-        ds["dudz2"] = grid.interp(grid.derivative(ds.u, "z", boundary="extrapolate")**2, "x")
-        ds["dvdz2"] = grid.interp(grid.derivative(ds.v, "z", boundary="extrapolate")**2, "y")
+        ds["dudz2"] = grid.interp(grid.derivative(ds.u, "z", boundary="extend")**2, "x")
+        ds["dvdz2"] = grid.interp(grid.derivative(ds.v, "z", boundary="extend")**2, "y")
         ds["S2"] = (ds.dudz2 + ds.dvdz2)
         ds["Ri"] = (ds.dbdz / ds.S2)
         if "mask" in extra:
