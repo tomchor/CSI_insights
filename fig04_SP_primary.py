@@ -14,9 +14,9 @@ path = f"/glade/u/home/tomasc/scratch_cheyenne/{dirname}/data/"
 snames = ["PNN_CIfront1",
           "PNN_SIfront4",
           ]
-alleffs = xr.load_dataset(f"data/alleffs.nc", decode_times=False)
-allprods = xr.load_dataset("data/allshearprod.nc", decode_times=False)
-allparams = xr.load_dataset("data/allparams.nc", decode_times=False)
+alleffs = xr.load_dataset(f"data_post/alleffs.nc", decode_times=False)
+allprods = xr.load_dataset("data_post/allshearprod.nc", decode_times=False)
+allparams = xr.load_dataset("data_post/allparams.nc", decode_times=False)
 
 alleffs = filter_sims(alleffs, prettify=True, only_main=True)
 allprods = filter_sims(allprods, prettify=True, only_main=True)

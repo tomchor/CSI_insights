@@ -37,7 +37,7 @@ alleffs.Δz.attrs = dict(units="m", long_name=r"$\Delta z$")
 #++++ Figure parames (ncols, nrows, vars)
 ncols=2
 nrows=1
-size=4.5
+size=3.5
 
 fig, axes = plt.subplots(ncols=ncols, nrows=nrows, figsize=(ncols*size, nrows*size/1.2),
                          squeeze=False, constrained_layout=True,

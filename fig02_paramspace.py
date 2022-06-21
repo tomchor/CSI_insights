@@ -6,7 +6,7 @@ from aux00_utils import filter_sims
 from aux02_plotting import plot_scatter
 
 #++++ Open and curate datasets
-allparams = xr.load_dataset("data/allparams.nc")
+allparams = xr.load_dataset("data_post/allparams.nc")
 
 allparams = filter_sims(allparams, prettify=True, only_main=True)
 
@@ -83,6 +83,6 @@ plot_refs(axesf[0])
 
 
 #++++ Save figure
-axesf[0].legend(loc="upper left", bbox_to_anchor=(1., 1), fontsize='x-small', labelspacing=1.1)
+axesf[0].legend(loc="upper left", bbox_to_anchor=(1., 1), fontsize='small', labelspacing=1.1)
 fig.savefig(f"figures_paper/paramspace_paper.pdf")
 #----
