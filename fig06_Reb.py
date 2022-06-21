@@ -116,24 +116,16 @@ def add_slope(ax, coeff=1e-1, slope=-1/2, log_xlim=(-1, 0), xneg=False):
 #----
 
 
-allparams = xr.open_dataset("data/allparams.nc")
+allparams = xr.open_dataset("data_post/allparams.nc")
 for i, sname in enumerate(snames):
     print(f"Opening {sname}")
 
     #+++++ Load datasets
     if extra:
-        ds_Reb = xr.load_dataset(f"data/Reb_{sname}{extra}.nc")
+        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}{extra}.nc")
     else:
-        ds_Reb = xr.load_dataset(f"data/Reb_{sname}.nc")
-    dseff = xr.load_dataset(f"data/efficiencies_{sname}.nc").squeeze()
-
-    #grid_avg, avg = open_simulation(path+f"avg.{sname}.nc", 
-    #                                use_inertial_periods=True,
-    #                                topology=sname[:3],
-    #                                squeeze=True,
-    #                                open_dataset_kwargs=dict(chunks=dict(time=1)),
-    #                                )
-    #avg = adjust_variables(avg)
+        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}.nc")
+    dseff = xr.load_dataset(f"data_post/efficiencies_{sname}.nc").squeeze()
     #-----
 
     #+++++ Make plotting easier
