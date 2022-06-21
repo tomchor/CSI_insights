@@ -60,7 +60,7 @@ def plot_horvort(vid, fig, tt, framedim="time", avg=None, **kwargs):
     #---- 
 
     #++++ Second panel
-    lim = 5e-9
+    lim = 1e-9
     vid0.PV.pnimshow(ax=axesf[1], cmap=cm.balance, 
                               y='z',
                             vmin=-lim, vmax=lim, 
@@ -89,7 +89,7 @@ def plot_horvort(vid, fig, tt, framedim="time", avg=None, **kwargs):
 
     #++++ Fix axes
     for i, ax in enumerate(axesf):
-        if i==0:
+        if i==1:
             time_sec = float(vid0.time*vid.T_inertial)
             ax.set_title(f"Time = {time_sec/3600:.2f} hours, {vid0.time.item():.2f} Inertial periods")
         else:
@@ -136,7 +136,7 @@ for sname in snames:
     vid.tke.attrs = dict(long_name="Kinetic energy", units="m$^2$/s$^2$")
     vid.ε.attrs = dict(long_name="Kinetic energy dissipation rate", units="m$^2$/s$^3$")
     vid.PV.attrs = dict(long_name="Ertel potential vorticity", units="1/s$^3$")
-    vid.ω_x.attrs = dict(long_name="y-vorticity", units="1/s")
+    vid.ω_x.attrs = dict(long_name="x-vorticity", units="1/s")
     #------
     
     #++++ Downsample and chunk to save space
