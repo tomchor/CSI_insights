@@ -253,6 +253,7 @@ for i, sname in enumerate(snames):
 
     dsout = xr.Dataset(dict(Re_b_avg_sgs=out.Re_b_avg_sgs, 
                             Re_b_avg_molec=out.Re_b_avg_molec,
+                            Re_b_strain=out.Re_b_strain,
                             Re_b_point_sgs=out.Re_b_point_sgs,
                             Re_b_point_molec=out.Re_b_point_molec,
                             Ri_mean=out.Ri_mean,

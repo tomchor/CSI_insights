@@ -29,13 +29,14 @@ extra = "_mask"
 #----
 
 #+++++ Start figure and markers
-nrows=3; ncols=2
-size = 4
+nrows=1; ncols=3
+size = 3.2
 fig_all, axes_all = plt.subplots(nrows=nrows, ncols=ncols, figsize=(1.3*ncols*size, nrows*size),
-                                 constrained_layout=True, squeeze=False)
+                                 constrained_layout=True, squeeze=False,
+                                 sharex=False, sharey=False)
 axesf_all = axes_all.flatten()
 
-markers = ["o", "^", "s", "p", "D", "P", "x", "*", ">", "<", "8"]
+markers_nc = ["o", "^", "s", "p", "D", "P", "x", "*", ">", "<", "8"]
 #-----
 
 #++++ Plotting functions
@@ -51,36 +52,22 @@ def scatter_points(axes, add_guide=True, **kwargs):
     vmin8=0; vmax8=0.25; hue8="γ"
     vmin9=0; vmax9=50; hue9="Re_b_avg_molec"
     if "cond" in extra:
-        vmin10=5e-11; vmax10=5e-9; hue10="ε_mean"
+        vmin10=1e-10; vmax10=5e-9; hue10="ε_mean"
     else:
-        vmin10=1e-11; vmax10=1e-9; hue10="ε_mean"
-    vmin11=0; vmax11=5; hue11="-RoRi_r"
+        vmin10=1e-10; vmax10=1e-9; hue10="ε_mean"
+    vmin11=1e-1; vmax11=1e+1; hue11="-RoRi_r"
     vmin12=0; vmax12=20; hue12="Re_b_point_sgs"
-
-    dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_sgs", y="γ", hue=hue10,
-                        vmin=vmin10, vmax=vmax10, norm=LogNorm(),
-                        add_guide=add_guide, marker=markers[i], label=pnames[sname],
-                        **kwargs)
-
-    dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_molec", y="γ", hue=hue10,
-                        vmin=vmin10, vmax=vmax10, norm=LogNorm(),
-                        add_guide=add_guide, marker=markers[i], label=pnames[sname],
-                        **kwargs)
-
-    dsplot.plot.scatter(ax=axes[2], x="Re_b_avg_sgs", y="-RoRi_outer", hue=hue11,
-                        vmin=vmin11, vmax=vmax11,
-                        add_guide=add_guide, marker=markers[i], label=pnames[sname],
-                        **kwargs)
-
-    dsplot.plot.scatter(ax=axes[3], x="-RoRi_outer", y="γ", hue=hue11,
-                        vmin=vmin11, vmax=vmax11,
-                        add_guide=add_guide, marker=markers[i], label=pnames[sname],
-                        **kwargs)
-
-    dsplot.plot.scatter(ax=axes[5], x="Ri_mean", y="γ", hue=hue11,
-                        vmin=vmin11, vmax=vmax11,
-                        add_guide=add_guide, marker=markers[i], label=pnames[sname],
-                        **kwargs)
+    vmin13=5e-6; vmax13=5e-5; hue13="ε_mean/νe_mean"
+    
+    dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_sgs", y="γ",
+                            marker=markers[i], c=colors[i], label=pnames[sname],
+                            **kwargs)
+    dsplot.plot.scatter(ax=axes[1], x="Re_b_strain", y="γ",
+                            marker=markers[i], c=colors[i], label=pnames[sname],
+                            **kwargs)
+    dsplot.plot.scatter(ax=axes[2], x="Re_b_avg_molec", y="γ",
+                            marker=markers[i], c=colors[i], label=pnames[sname],
+                            **kwargs)
 
     return None
 
@@ -101,42 +88,34 @@ def prettify_ax(ax, slope=True, xlog=True, ylog=True,
     ax.grid(True)
     return
 
-def add_slope(ax, coeff=1e-1, slope=-1/2, log_xlim=(-1, 0)):
+def add_slope(ax, coeff=1e-1, slope=-1/2, log_xlim=(-1, 0), xneg=False):
     xcoor = np.logspace(*log_xlim)
-    ax.plot(xcoor, coeff*xcoor**(slope), c="k")
+    if xneg: 
+        xcoor = - xcoor[::-1]
+        ax.plot(xcoor, coeff*(-xcoor)**(slope), c="k")
+    else:
+        ax.plot(xcoor, coeff*xcoor**(slope), c="k")
     return
 #----
 
 
-allparams = xr.open_dataset("data/allparams.nc")
+allparams = xr.open_dataset("data_post/allparams.nc")
 for i, sname in enumerate(snames):
     print(f"Opening {sname}")
 
     #+++++ Load datasets
     if extra:
-        ds_Reb = xr.load_dataset(f"data/Reb_{sname}{extra}.nc")
+        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}{extra}.nc")
     else:
-        ds_Reb = xr.load_dataset(f"data/Reb_{sname}.nc")
-    dseff = xr.load_dataset(f"data/efficiencies_{sname}.nc").squeeze()
-
-    grid_avg, avg = open_simulation(path+f"avg.{sname}.nc", 
-                                    use_inertial_periods=True,
-                                    topology=sname[:3],
-                                    squeeze=True,
-                                    open_dataset_kwargs=dict(chunks=dict(time=1)),
-                                    )
-    avg = adjust_variables(avg)
+        ds_Reb = xr.load_dataset(f"data_post/Reb_{sname}.nc")
+    dseff = xr.load_dataset(f"data_post/efficiencies_{sname}.nc").squeeze()
     #-----
-
-
-    #++++ Process avg
-    ε_avg = avg.ε.sel(time=slice(None, 5, 10)).pnmean('z')
-    #----
 
     #+++++ Make plotting easier
     dseff = dseff.sel(time=ds_Reb.time)
     dsplot = xr.Dataset(dict(Re_b_avg_sgs=ds_Reb.Re_b_avg_sgs, 
                              Re_b_avg_molec=ds_Reb.Re_b_avg_molec,
+                             Re_b_strain=ds_Reb.Re_b_strain,
                              Re_b_point_sgs=ds_Reb.Re_b_point_sgs,
                              Re_b_point_molec=ds_Reb.Re_b_point_molec,
                              Ro_mean=ds_Reb.Ro_mean, Ri_mean=ds_Reb.Ri_mean, ε_mean=ds_Reb.ε_mean,
@@ -145,24 +124,26 @@ for i, sname in enumerate(snames):
                              γ=dseff.γ, Γ=dseff.Γ,
                              γ_coeff=dseff.γ_coeff, Γ_coeff=dseff.Γ_coeff,
                              ))
-    dsplot["Ri_r"] = allparams.sel(simulation=sname).Ri_r + 0*dsplot.time
-    dsplot["RoRi_r"] = (allparams.Ri_r * allparams.Ro_r).sel(simulation=sname) + 0*dsplot.time
-    dsplot["-RoRi_r"] = -(allparams.Ri_r * allparams.Ro_r).sel(simulation=sname) + 0*dsplot.time
+    dsplot["Ri_qmin"] = allparams.sel(simulation=sname).Ri_qmin + 0*dsplot.time
+    dsplot["RoRi_r"] = (allparams.Ri_qmin * allparams.Ro_qmin).sel(simulation=sname) + 0*dsplot.time
+    dsplot["-RoRi_r"] = -(allparams.Ri_qmin * allparams.Ro_qmin).sel(simulation=sname) + 0*dsplot.time
     dsplot["RoRi_outer"] = dsplot.Ro_mean * dsplot.Ri_mean
     dsplot["-RoRi_outer"] = -dsplot.Ro_mean * dsplot.Ri_mean
+    dsplot["ε_mean/νe_mean"] = dsplot.ε_mean / dsplot.νe_mean
 
-    t_εmax = ε_avg.time[ε_avg.argmax('time').values]
-    dsplot = dsplot.sel(time=slice(t_εmax,None)) # Remove laminar flow
+    dsplot = dsplot.sel(time=slice(ds_Reb.t_εmax,None)) # Remove laminar flow
     dsplot = dsplot.where(dsplot.ε_mean>1e-10) # Remove low-turbulence flows
     #-----
 
     #++++ Prepare names for plotting
-    dsplot.RoRi_outer.attrs = dict(long_name=r"$\langle{Ro}\rangle_s\,\langle{Ri}\rangle_s$")
-    dsplot["-RoRi_outer"].attrs = dict(long_name=r"$-\langle{Ro}\rangle_s\,\langle{Ri}\rangle_s$")
+    dsplot.RoRi_outer.attrs = dict(long_name=r"$\langle{Ro}\rangle_q\,\langle{Ri}\rangle_q$")
+    dsplot["-RoRi_outer"].attrs = dict(long_name=r"$-\langle{Ro}\rangle_q\,\langle{Ri}\rangle_q$")
     dsplot["-RoRi_r"].attrs = dict(long_name=r"$-Ro_r \, Ri_r$")
     dsplot.Re_b_avg_sgs.attrs = dict(long_name=r"$Re_b^\mathrm{sgs}$")
     dsplot.Re_b_avg_molec.attrs = dict(long_name=r"$Re_b^\mathrm{mol}$")
-    dsplot.ε_mean.attrs = dict(long_name=r"$\langle{\epsilon}\rangle_s$", units=r"m$^2$/s$^3$")
+    dsplot.Re_b_strain.attrs = dict(long_name=r"$Re_b^\mathrm{strain}$")
+    dsplot.ε_mean.attrs = dict(long_name=r"$\langle{\varepsilon}\rangle_q$", units=r"m$^2$/s$^3$")
+    dsplot["ε_mean/νe_mean"].attrs = dict(long_name=r"$\langle{\varepsilon}\rangle_q / \langle{\nu_e}\rangle_q$", units=r"1/s$^2$")
     #----
 
     #+++++ Plot all simulations
@@ -173,22 +154,25 @@ for i, sname in enumerate(snames):
 
 #++++ Make plot pretty
 for i, ax in enumerate(axes_all[0,:]):
-    prettify_ax(ax, slope=False)
-add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.2e-1)
-add_slope(axes_all[0,1], log_xlim=(1.5, 3), slope=-1/2, coeff=7e-1)
-for i, ax in enumerate(axes_all[1,:]):
-    prettify_ax(ax, slope=False, xsymlog=True, ylog=True)
+    prettify_ax(ax, slope=False, xsymlog=True)
+
+add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
+axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
+
+add_slope(axes_all[0,1], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
+axes_all[0,1].text(9e-1, 7e-2, "$-1/2$ slope")
+
+add_slope(axes_all[0,2], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
+axes_all[0,2].text(4e-1, 7e-2, "$-1/2$ slope")
 
 for ax in axesf_all:
     ax.set_title("")
-    ax.set_ylim(1e-2, None)
+    ax.set_ylim(3e-2, None)
 
-#if "cond" in extra:
-#    for i, ax in enumerate(axes_all[:,2]):
-#        ax.set_xlim(None, -1e-2)
-axesf_all[2].legend()
+axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
 #----
 
 #++++ Save plot
-fig_all.savefig(f"figures_check/eff_Reb_all{extra}_debug.pdf")
+letterize(axesf_all, 0.05, 0.05, fontsize=14)
+fig_all.savefig(f"figures_paper/eff_Reb_all{extra}.png", dpi=300)
 #----
