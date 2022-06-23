@@ -113,7 +113,7 @@ for i, sname in enumerate(snames):
         depth=np.inf
     zF_r = out.sel(zF=out.z_0+depth, method="nearest").zF
     zF_l = out.sel(zF=out.z_0-depth, method="nearest").zF
-    zslice = slice(zF_l, zF_r) # Make sure len(zF) = len(zC)+1
+    zslice = slice(zF_l, zF_r, 1) # Make sure len(zF) = len(zC)+1
 
     tslice = slice(1, None)
 
@@ -184,14 +184,19 @@ for i, sname in enumerate(snames):
 
         ds["dudz2"] = grid.interp(grid.derivative(ds.u, "z", boundary="extend")**2, "x")
         ds["dvdz2"] = grid.interp(grid.derivative(ds.v, "z", boundary="extend")**2, "y")
-        ds["S2"] = (ds.dudz2 + ds.dvdz2)
-        ds["Ri"] = (ds.dbdz / ds.S2)
+        ds["VS2"] = (ds.dudz2 + ds.dvdz2)
+        ds["Ri"] = (ds.dbdz / ds.VS2)
+        ds["Ri_inv_avg"] = ds.VS2 / ds.N2_inf
         if "mask" in extra:
             with dask.config.set(**{'array.slicing.split_large_chunks': True}):
                 Ri_mask = ds.Ri.where(mask_acf, drop=True)
                 ds["Ri_mean"] = Ri_mask.pnmean(('x', 'y', 'z'))
+
+                Ri_inv_avg_mask = ds.Ri_inv_avg.where(mask_acf, drop=True)
+                ds["Ri_inv_avg_mean"] = Ri_inv_avg_mask.pnmean(('x', 'y', 'z'))
         else:
             ds["Ri_mean"] = ds.Ri.pnmean(('x', 'y', 'z'))
+            ds["Ri_inv_avg_mean"] = ds.Ri_inv_avg.pnmean(('x', 'y', 'z'))
 
         ds["u2"] = grid.interp(ds.u**2, "x")
         ds["v2"] = grid.interp(ds.v**2, "y")
@@ -257,6 +262,7 @@ for i, sname in enumerate(snames):
                             Re_b_point_sgs=out.Re_b_point_sgs,
                             Re_b_point_molec=out.Re_b_point_molec,
                             Ri_mean=out.Ri_mean,
+                            Ri_inv_avg_mean=out.Ri_inv_avg_mean,
                             Ro_mean=out.Ro_mean,
                             ε_mean=out.ε_mean,
                             Fr_avg_mean=out.Fr_avg_mean,
