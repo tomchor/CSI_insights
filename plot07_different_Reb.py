@@ -159,9 +159,6 @@ for i, sname in enumerate(snames):
 for i, ax in enumerate(axes_all[0,:]):
     prettify_ax(ax, slope=False, xsymlog=True)
 
-#add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
-#axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
-
 add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
 axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
 
@@ -170,8 +167,6 @@ axes_all[0,1].text(4e-1, 7e-2, "$-1/2$ slope")
 
 add_slope(axes_all[0,2], log_xlim=(-1.2, 0), slope=1/2, coeff=1.3e-1, xneg=True)
 axes_all[0,2].text(-2, 7e-2, "$1/2$ slope")
-#add_slope(axes_all[0,1], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
-#axes_all[0,1].text(9e-1, 7e-2, "$-1/2$ slope")
 
 
 for ax in axesf_all:

@@ -53,6 +53,7 @@ alleffs = xr.load_dataset("data_post/alleffs.nc")
 
 allparams["νz"] = allparams.νz.where(np.logical_not(allparams.LES), other=0)
 allparams = xr.merge([allparams, alleffs.Γ_last])
+allparams = allparams.reset_coords() # Turn xC, ΔxC, etc. into variables
 #----
 
 #++++ Separate into two
@@ -80,7 +81,7 @@ params_aux = replace_indices(params_aux)
 def latex_sci(x):
     myexp = np.floor(np.log10(x))
     xout = x*10**(-myexp)
-    strout = "{:.2f} \times 10^{{{}}}".format(xout, int(myexp))
+    strout = "${:.1f} \times 10^{{{}}}$".format(xout, int(myexp))
     return strout
 
 def change_format(df):
@@ -92,10 +93,10 @@ def change_format(df):
 
     df[rosetta["delta_ar"]] = df[rosetta["delta_ar"]].map(latex_sci)
     df[rosetta["f_0"]] = df[rosetta["f_0"]].map(latex_sci)
-    df[rosetta["u_0"]] = df[rosetta["u_0"]].map(lambda x: '%.1e' % x)
-    df[rosetta["N2_inf"]] = df[rosetta["N2_inf"]].map(lambda x: '%.1e' % x)
+    df[rosetta["u_0"]] = df[rosetta["u_0"]].map(lambda x: '$%2.2f$' % x)
+    df[rosetta["N2_inf"]] = df[rosetta["N2_inf"]].map(latex_sci)
     df[rosetta["Ro_qmin"]] = df[rosetta["Ro_qmin"]].map(lambda x: '$%2.1f$' % x)
-    df[rosetta["Ri_qmin"]] = df[rosetta["Ri_qmin"]].map(lambda x: '%2.1f' % x)
+    df[rosetta["Ri_qmin"]] = df[rosetta["Ri_qmin"]].map(lambda x: '$%2.1f$' % x)
     return df
 
 params_main = change_format(params_main)
