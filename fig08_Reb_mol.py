@@ -58,7 +58,7 @@ def scatter_points(axes, add_guide=True, **kwargs):
     vmin12=0; vmax12=20; hue12="Re_b_point_sgs"
     vmin13=5e-6; vmax13=5e-5; hue13="ε_mean/νe_mean"
     
-    dsplot.plot.scatter(ax=axes[0], x="Re_b_strain", y="γ",
+    dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_molec", y="γ",
                             marker=markers[i], c=colors[i], label=pnames[sname],
                             **kwargs)
     dsplot.plot.scatter(ax=axes[1], x="Ri_inv_avg_mean", y="γ",
@@ -159,17 +159,12 @@ for i, sname in enumerate(snames):
 for i, ax in enumerate(axes_all[0,:]):
     prettify_ax(ax, slope=False, xsymlog=True)
 
-#add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
-#axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
-
-add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
+add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
 axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
 
-add_slope(axes_all[0,1], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
-axes_all[0,1].text(4e-1, 7e-2, "$-1/2$ slope")
+#add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
+#axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
 
-add_slope(axes_all[0,2], log_xlim=(-1.2, 0), slope=1/2, coeff=1.3e-1, xneg=True)
-axes_all[0,2].text(-2, 7e-2, "$1/2$ slope")
 #add_slope(axes_all[0,1], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
 #axes_all[0,1].text(9e-1, 7e-2, "$-1/2$ slope")
 
@@ -183,6 +178,5 @@ axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
 
 #++++ Save plot
 letterize(axesf_all, 0.05, 0.05, fontsize=14)
-fig_all.savefig(f"figures_check/Reb_inv{extra}.png", dpi=300)
+fig_all.savefig(f"figures_paper/Reb_rel_mol{extra}.png", dpi=300)
 #----
-
