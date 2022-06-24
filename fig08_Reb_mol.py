@@ -28,7 +28,7 @@ extra = "_mask"
 #----
 
 #+++++ Start figure and markers
-nrows=1; ncols=3
+nrows=1; ncols=2
 size = 3.2
 fig_all, axes_all = plt.subplots(nrows=nrows, ncols=ncols, figsize=(1.3*ncols*size, nrows*size),
                                  constrained_layout=True, squeeze=False,
@@ -61,10 +61,7 @@ def scatter_points(axes, add_guide=True, **kwargs):
     dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_molec", y="γ",
                             marker=markers[i], c=colors[i], label=pnames[sname],
                             **kwargs)
-    dsplot.plot.scatter(ax=axes[1], x="Ri_inv_avg_mean", y="γ",
-                            marker=markers[i], c=colors[i], label=pnames[sname],
-                            **kwargs)
-    dsplot.plot.scatter(ax=axes[2], x="RoRi_avg_mean", y="γ",
+    dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_molec", y="Re_b_avg_sgs",
                             marker=markers[i], c=colors[i], label=pnames[sname],
                             **kwargs)
 
@@ -160,23 +157,19 @@ for i, ax in enumerate(axes_all[0,:]):
     prettify_ax(ax, slope=False, xsymlog=True)
 
 add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
-axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
+axes_all[0,0].text(1e1, 7e-2, "$-1/2$ slope")
 
-#add_slope(axes_all[0,0], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
-#axes_all[0,0].text(4e-1, 7e-2, "$-1/2$ slope")
-
-#add_slope(axes_all[0,1], log_xlim=(0, 1.2), slope=-1/2, coeff=1.5e-1)
-#axes_all[0,1].text(9e-1, 7e-2, "$-1/2$ slope")
-
+add_slope(axes_all[0,1], log_xlim=(1.5, 3.5), slope=1, coeff=5e-3)
+axes_all[0,1].text(6e2, 1, "$1$ slope")
 
 for ax in axesf_all:
     ax.set_title("")
     ax.set_ylim(3e-2, None)
 
-axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
+axesf_all[-1].legend(loc="upper left", bbox_to_anchor=(.95, 1), fontsize=10)
 #----
 
 #++++ Save plot
 letterize(axesf_all, 0.05, 0.05, fontsize=14)
-fig_all.savefig(f"figures_paper/Reb_rel_mol{extra}.png", dpi=300)
+fig_all.savefig(f"figures_paper/Reb_rel_mol{extra}.pdf", dpi=300)
 #----
