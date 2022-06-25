@@ -59,27 +59,13 @@ def scatter_points(axes, add_guide=True, **kwargs):
     vmin12=0; vmax12=20; hue12="Re_b_point_sgs"
     vmin13=5e-6; vmax13=5e-5; hue13="ε_mean/νe_mean"
     
-    if False:
-        dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_sgs", y="γ", hue=hue10,
-                            vmin=vmin10, vmax=vmax10, norm=LogNorm(),
-                            add_guide=add_guide, marker=markers_nc[i], label=pnames[sname],
-                            **kwargs)
+    dsplot.plot.scatter(ax=axes[0], x="Re_b_strain", y="γ",
+                        marker=markers[i], c=colors[i], label=pnames[sname],
+                        **kwargs)
 
-        dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_sgs", y="-RoRi_outer", hue=hue11,
-                            vmin=vmin11, vmax=vmax11, norm=LogNorm(),
-                            add_guide=add_guide, marker=markers_nc[i], label=pnames[sname],
-                            **kwargs)
-
-    else:
-
-        dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_sgs", y="γ",
-                            marker=markers[i], c=colors[i], label=pnames[sname],
-                            **kwargs)
-
-        dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_sgs", y="-RoRi_outer",
-                            marker=markers[i], c=colors[i], label=pnames[sname],
-                            **kwargs)
-
+    dsplot.plot.scatter(ax=axes[1], x="Re_b_strain", y="-RoRi_outer",
+                        marker=markers[i], c=colors[i], label=pnames[sname],
+                        **kwargs)
 
     dsplot.plot.scatter(ax=axes[2], x="RoRi_outer", y="γ", hue=hue11,
                         vmin=vmin11, vmax=vmax11, norm=LogNorm(),
@@ -132,6 +118,7 @@ for i, sname in enumerate(snames):
     dseff = dseff.sel(time=ds_Reb.time)
     dsplot = xr.Dataset(dict(Re_b_avg_sgs=ds_Reb.Re_b_avg_sgs, 
                              Re_b_avg_molec=ds_Reb.Re_b_avg_molec,
+                             Re_b_strain=ds_Reb.Re_b_strain,
                              Re_b_point_sgs=ds_Reb.Re_b_point_sgs,
                              Re_b_point_molec=ds_Reb.Re_b_point_molec,
                              Ro_mean=ds_Reb.Ro_mean, Ri_mean=ds_Reb.Ri_mean, ε_mean=ds_Reb.ε_mean,
@@ -156,6 +143,7 @@ for i, sname in enumerate(snames):
     dsplot["-RoRi_outer"].attrs = dict(long_name=r"$-\langle{Ro}\rangle_q\,\langle{Ri}\rangle_q$")
     dsplot["-RoRi_r"].attrs = dict(long_name=r"$-Ro_r \, Ri_r$")
     dsplot.Re_b_avg_sgs.attrs = dict(long_name=r"$Re_b^\mathrm{sgs}$")
+    dsplot.Re_b_strain.attrs = dict(long_name=r"$Re_b^\mathrm{sgs}$")
     dsplot.Re_b_avg_molec.attrs = dict(long_name=r"$Re_b^\mathrm{mol}$")
     dsplot.ε_mean.attrs = dict(long_name=r"$\langle{\varepsilon}\rangle_q$", units=r"m$^2$/s$^3$")
     dsplot["ε_mean/νe_mean"].attrs = dict(long_name=r"$\langle{\varepsilon}\rangle_q / \langle{\nu_e}\rangle_q$", units=r"1/s$^2$")
