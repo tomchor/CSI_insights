@@ -139,7 +139,7 @@ for i, sname in enumerate(snames):
     dsplot["RoRi_avg_mean"].attrs = dict(long_name=r"$\langle{Ro}\rangle_q\,\langle{Ri}\rangle_q$")
     dsplot["-RoRi_r"].attrs = dict(long_name=r"$-Ro_r \, Ri_r$")
     dsplot.Re_b_avg_sgs.attrs = dict(long_name=r"$Re_b^\mathrm{sgs}$")
-    dsplot.Re_b_avg_molec.attrs = dict(long_name=r"$Re_b^\mathrm{mol}$")
+    dsplot.Re_b_avg_molec.attrs = dict(long_name=r"$Re_b$")
     dsplot.Re_b_strain.attrs = dict(long_name=r"$Re_b^\mathrm{strain}$")
     dsplot.Ri_inv_avg_mean.attrs = dict(long_name=r"$1/Ri$")
     dsplot.ε_mean.attrs = dict(long_name=r"$\langle{\varepsilon}\rangle_q$", units=r"m$^2$/s$^3$")
