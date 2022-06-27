@@ -160,13 +160,16 @@ add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
 axes_all[0,0].text(1e1, 7e-2, "$-1/2$ slope")
 
 add_slope(axes_all[0,1], log_xlim=(1.5, 3.5), slope=1, coeff=5e-3)
-axes_all[0,1].text(6e2, 1, "$1$ slope")
+axes_all[0,1].text(2e2, .6, "$1$ slope")
+
+add_slope(axes_all[0,1], log_xlim=(1.5, 4), slope=1/3, coeff=5e-1)
+axes_all[0,1].text(2e3, 3.5, "$1/3$ slope")
 
 for ax in axesf_all:
     ax.set_title("")
     ax.set_ylim(3e-2, None)
 
-axesf_all[-1].legend(loc="upper left", bbox_to_anchor=(.95, 1), fontsize=10)
+axesf_all[-1].legend(loc="upper left", bbox_to_anchor=(.98, 1), fontsize=11)
 #----
 
 #++++ Save plot
