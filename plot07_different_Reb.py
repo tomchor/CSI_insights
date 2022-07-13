@@ -28,7 +28,7 @@ extra = "_mask"
 #----
 
 #+++++ Start figure and markers
-nrows=1; ncols=3
+nrows=1; ncols=2
 size = 3.2
 fig_all, axes_all = plt.subplots(nrows=nrows, ncols=ncols, figsize=(1.3*ncols*size, nrows*size),
                                  constrained_layout=True, squeeze=False,
@@ -64,9 +64,9 @@ def scatter_points(axes, add_guide=True, **kwargs):
     dsplot.plot.scatter(ax=axes[1], x="Re_b_strain", y="Fr_p_avg_mean",
                             marker=markers[i], c=colors[i], label=pnames[sname],
                             **kwargs)
-    dsplot.plot.scatter(ax=axes[2], x="Re_b_strain", y="Fr_avg_mean",
-                            marker=markers[i], c=colors[i], label=pnames[sname],
-                            **kwargs)
+    #dsplot.plot.scatter(ax=axes[1], x="Re_b_strain", y="Fr_avg_mean",
+    #                        marker=markers[i], c=colors[i], label=pnames[sname],
+    #                        **kwargs)
 
     return None
 
@@ -178,7 +178,7 @@ for ax in axesf_all:
     ax.set_title("")
 axesf_all[0].set_ylim(3e-2, None)
 
-axesf_all[2].legend(loc="upper left", bbox_to_anchor=(.92, 1), fontsize=10)
+axesf_all[-1].legend(loc="upper left", bbox_to_anchor=(.96, 1), fontsize=10)
 #----
 
 #++++ Save plot
