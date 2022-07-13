@@ -28,9 +28,9 @@ extra = "_mask"
 #----
 
 #+++++ Start figure and markers
-nrows=1; ncols=2
+nrows=1; ncols=1
 size = 3.2
-fig_all, axes_all = plt.subplots(nrows=nrows, ncols=ncols, figsize=(1.3*ncols*size, nrows*size),
+fig_all, axes_all = plt.subplots(nrows=nrows, ncols=ncols, figsize=(1.5*ncols*size, nrows*size),
                                  constrained_layout=True, squeeze=False,
                                  sharex=False, sharey=False)
 axesf_all = axes_all.flatten()
@@ -61,9 +61,9 @@ def scatter_points(axes, add_guide=True, **kwargs):
     dsplot.plot.scatter(ax=axes[0], x="Re_b_avg_molec", y="γ",
                             marker=markers[i], c=colors[i], label=pnames[sname],
                             **kwargs)
-    dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_molec", y="Re_b_avg_sgs",
-                            marker=markers[i], c=colors[i], label=pnames[sname],
-                            **kwargs)
+#    dsplot.plot.scatter(ax=axes[1], x="Re_b_avg_molec", y="Re_b_avg_sgs",
+#                            marker=markers[i], c=colors[i], label=pnames[sname],
+#                            **kwargs)
 
     return None
 
@@ -159,11 +159,11 @@ for i, ax in enumerate(axes_all[0,:]):
 add_slope(axes_all[0,0], log_xlim=(2., 3.2), slope=-1/2, coeff=1.3e0)
 axes_all[0,0].text(1e1, 7e-2, "$-1/2$ slope")
 
-add_slope(axes_all[0,1], log_xlim=(1.5, 3.5), slope=1, coeff=5e-3)
-axes_all[0,1].text(2e2, .6, "$1$ slope")
+#add_slope(axes_all[0,1], log_xlim=(1.5, 3.5), slope=1, coeff=5e-3)
+#axes_all[0,1].text(2e2, .6, "$1$ slope")
 
-add_slope(axes_all[0,1], log_xlim=(1.5, 4), slope=1/3, coeff=5e-1)
-axes_all[0,1].text(2e3, 3.5, "$1/3$ slope")
+#add_slope(axes_all[0,1], log_xlim=(1.5, 4), slope=1/3, coeff=5e-1)
+#axes_all[0,1].text(2e3, 3.5, "$1/3$ slope")
 
 for ax in axesf_all:
     ax.set_title("")

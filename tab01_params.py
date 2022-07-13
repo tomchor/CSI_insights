@@ -86,7 +86,7 @@ def latex_sci(x):
 
 def change_format(df):
     if rosetta["νz"] in df.columns:
-        df[rosetta["νz"]] = df[rosetta["νz"]].map(lambda x: '%.1e' % x)
+        df[rosetta["νz"]] = df[rosetta["νz"]].map(latex_sci)
 
     if rosetta["Γ_last"] in df.columns:
         df[rosetta["Γ_last"]] = df[rosetta["Γ_last"]].map(lambda x: '%3.2f' % x)
