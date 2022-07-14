@@ -3,6 +3,7 @@ import pynanigans as pn
 import xarray as xr
 from aux00_utils import open_simulation, pnames
 from aux01_physfuncs import adjust_variables
+from aux02_plotting import letterize, plot_scatter, colors, markers
 from matplotlib import pyplot as plt
 from matplotlib.colors import LogNorm, SymLogNorm
 π = np.pi
@@ -19,7 +20,7 @@ snames = ["PNN_CIfront1",
           "PNN_SIfront1",
           "PNN_SIfront2",
           "PNN_SIfront3",
-          #"PNN_SIfront4",
+          "PNN_SIfront4",
           "PNN_SIfront5",
           "PNN_SIfront6",
 #          "PNN_CIintjet01",

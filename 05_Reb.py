@@ -36,30 +36,30 @@ snames = ["PNN_CIfront1",
           "PNN_SIfront4_f2",
           "PNN_SIfront4_f4",
           "PNN_SIfront4_f8",
-          "PNN_CIfront1_AMD",
-          "PNN_CIfront1_AMD_f2",
-          "PNN_CIfront1_AMD_f4",
-          "PNN_CIfront1_AMD_f8",
-          "PNN_SIfront4_AMD",
-          "PNN_SIfront4_AMD_f2",
-          "PNN_SIfront4_AMD_f4",
-          "PNN_SIfront4_AMD_f8",
-          "PNN_CIfront1_AMD2",
-          "PNN_CIfront1_AMD2_f2",
-          "PNN_CIfront1_AMD2_f4",
-          "PNN_CIfront1_AMD2_f8",
-          "PNN_SIfront4_AMD2",
-          "PNN_SIfront4_AMD2_f2",
-          "PNN_SIfront4_AMD2_f4",
-          "PNN_SIfront4_AMD2_f8",
-          "PNN_CIfront1_AMD3",
-          "PNN_CIfront1_AMD3_f2",
-          "PNN_CIfront1_AMD3_f4",
-          "PNN_CIfront1_AMD3_f8",
-          "PNN_SIfront4_AMD3",
-          "PNN_SIfront4_AMD3_f2",
-          "PNN_SIfront4_AMD3_f4",
-          "PNN_SIfront4_AMD3_f8",
+          #"PNN_CIfront1_AMD",
+          #"PNN_CIfront1_AMD_f2",
+          #"PNN_CIfront1_AMD_f4",
+          #"PNN_CIfront1_AMD_f8",
+          #"PNN_SIfront4_AMD",
+          #"PNN_SIfront4_AMD_f2",
+          #"PNN_SIfront4_AMD_f4",
+          #"PNN_SIfront4_AMD_f8",
+          #"PNN_CIfront1_AMD2",
+          #"PNN_CIfront1_AMD2_f2",
+          #"PNN_CIfront1_AMD2_f4",
+          #"PNN_CIfront1_AMD2_f8",
+          #"PNN_SIfront4_AMD2",
+          #"PNN_SIfront4_AMD2_f2",
+          #"PNN_SIfront4_AMD2_f4",
+          #"PNN_SIfront4_AMD2_f8",
+          #"PNN_CIfront1_AMD3",
+          #"PNN_CIfront1_AMD3_f2",
+          #"PNN_CIfront1_AMD3_f4",
+          #"PNN_CIfront1_AMD3_f8",
+          #"PNN_SIfront4_AMD3",
+          #"PNN_SIfront4_AMD3_f2",
+          #"PNN_SIfront4_AMD3_f4",
+          #"PNN_SIfront4_AMD3_f8",
           ]
 #----
 
@@ -113,7 +113,7 @@ for i, sname in enumerate(snames):
         depth=np.inf
     zF_r = out.sel(zF=out.z_0+depth, method="nearest").zF
     zF_l = out.sel(zF=out.z_0-depth, method="nearest").zF
-    zslice = slice(zF_l, zF_r) # Make sure len(zF) = len(zC)+1
+    zslice = slice(zF_l, zF_r, 1) # Make sure len(zF) = len(zC)+1
 
     tslice = slice(1, None)
 
@@ -126,9 +126,9 @@ for i, sname in enumerate(snames):
         print("Getting masks for conditional averaging")
         ε_c = 1e-10
         mask_ccc = out.ε > ε_c
-        mask_ccf = subgrid_out.interp(out.ε, 'z', boundary="extrapolate") > ε_c
-        mask_cfc = subgrid_out.interp(out.ε, 'y', boundary="extrapolate") > ε_c
-        mask_fcc = subgrid_out.interp(out.ε, 'x', boundary="extrapolate") > ε_c
+        mask_ccf = subgrid_out.interp(out.ε, 'z', boundary="extend") > ε_c
+        mask_cfc = subgrid_out.interp(out.ε, 'y', boundary="extend") > ε_c
+        mask_fcc = subgrid_out.interp(out.ε, 'x', boundary="extend") > ε_c
 
         with dask.config.set(**{'array.slicing.split_large_chunks': True}):
             out["ε"] = out.ε.where(mask_ccc, drop=True)
@@ -160,10 +160,12 @@ for i, sname in enumerate(snames):
                 ds["ε_mean"] = ε_mask.pnmean(('x', 'y', 'z'))
                 ds["νe_mean"] = νe_mask.pnmean(('x', 'y', 'z'))
                 ds["dbdz_mean"] = dbdz_mask.pnmean(('x', 'y', 'z'))
+                ds["Re_b_strain"] = (ds.ε / ds.ν_e).where(mask_acc, drop=True).pnmean(('x', 'y', 'z')) / ds.N2_inf
         else:
             ds["ε_mean"] = ds.ε.pnmean(('x', 'y', 'z'))
             ds["νe_mean"] = ds.ν_e.pnmean(('x', 'y', 'z'))
             ds["dbdz_mean"] = ds.dbdz.pnmean(('x', 'y', 'z'))
+            ds["Re_b_strain"] = (ds.ε / ds.ν_e).pnmean(('x', 'y', 'z')) / ds.N2_inf
 
         ds["Re_b_avg_sgs"] = ds.ε_mean / (ds.νe_mean * ds.N2_inf)
         ds["Re_b_avg_molec"] = ds.ε_mean / (ν_m * ds.N2_inf)
@@ -171,7 +173,7 @@ for i, sname in enumerate(snames):
         ds["Re_b_point_molec"] = ds.ε_mean / (ν_m * ds.dbdz_mean)
 
         ds["dvdx"] = grid.derivative(ds.v, "x")
-        ds["dudy"] = grid.derivative(ds.u, "y", boundary="extrapolate")
+        ds["dudy"] = grid.derivative(ds.u, "y", boundary="extend")
         ds["Ro"] = (ds.dvdx - ds.dudy)/ds.f_0
         if "mask" in extra:
             with dask.config.set(**{'array.slicing.split_large_chunks': True}):
@@ -180,16 +182,22 @@ for i, sname in enumerate(snames):
         else:
             ds["Ro_mean"] = ds.Ro.pnmean(('x', 'y', 'z'))
 
-        ds["dudz2"] = grid.interp(grid.derivative(ds.u, "z", boundary="extrapolate")**2, "x")
-        ds["dvdz2"] = grid.interp(grid.derivative(ds.v, "z", boundary="extrapolate")**2, "y")
-        ds["S2"] = (ds.dudz2 + ds.dvdz2)
-        ds["Ri"] = (ds.dbdz / ds.S2)
+        ds["dudz2"] = grid.interp(grid.derivative(ds.u, "z", boundary="extend")**2, "x")
+        ds["dvdz2"] = grid.interp(grid.derivative(ds.v, "z", boundary="extend")**2, "y")
+        ds["VS2"] = (ds.dudz2 + ds.dvdz2)
+        ds["Ri"] = (ds.dbdz / ds.VS2)
+        ds["Ri"] = ds.Ri.where(np.logical_not(np.isinf(ds.Ri))) # Exclude inf values
+        ds["Ri_inv_avg"] = ds.VS2 / ds.N2_inf
         if "mask" in extra:
             with dask.config.set(**{'array.slicing.split_large_chunks': True}):
                 Ri_mask = ds.Ri.where(mask_acf, drop=True)
                 ds["Ri_mean"] = Ri_mask.pnmean(('x', 'y', 'z'))
+
+                Ri_inv_avg_mask = ds.Ri_inv_avg.where(mask_acf, drop=True)
+                ds["Ri_inv_avg_mean"] = Ri_inv_avg_mask.pnmean(('x', 'y', 'z'))
         else:
             ds["Ri_mean"] = ds.Ri.pnmean(('x', 'y', 'z'))
+            ds["Ri_inv_avg_mean"] = ds.Ri_inv_avg.pnmean(('x', 'y', 'z'))
 
         ds["u2"] = grid.interp(ds.u**2, "x")
         ds["v2"] = grid.interp(ds.v**2, "y")
@@ -251,9 +259,11 @@ for i, sname in enumerate(snames):
 
     dsout = xr.Dataset(dict(Re_b_avg_sgs=out.Re_b_avg_sgs, 
                             Re_b_avg_molec=out.Re_b_avg_molec,
+                            Re_b_strain=out.Re_b_strain,
                             Re_b_point_sgs=out.Re_b_point_sgs,
                             Re_b_point_molec=out.Re_b_point_molec,
                             Ri_mean=out.Ri_mean,
+                            Ri_inv_avg_mean=out.Ri_inv_avg_mean,
                             Ro_mean=out.Ro_mean,
                             ε_mean=out.ε_mean,
                             Fr_avg_mean=out.Fr_avg_mean,
